@@ -1,10 +1,13 @@
 package com.rowdyCSExtensions
 
+import android.util.Log
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.utils.*
 
 class MyFlixer(val plugin: MyFlixerPlugin) :
         MainAPI() { // all providers must be an intstance of MainAPI
@@ -67,7 +70,7 @@ class MyFlixer(val plugin: MyFlixerPlugin) :
         val details = res.document.select("div.detail_page-infor")
         val name = details.select("h2.heading-name > a").text()
         if (type.contains("movie")) {
-            return newMovieLoadResponse(name, url, TvType.Movie, url) {
+            return newMovieLoadResponse(name, url, TvType.Movie, contentId) {
                 this.posterUrl = details.select("div.film-poster > img").attr("src")
                 this.plot = details.select("div.description").text()
                 this.rating =
@@ -107,11 +110,12 @@ class MyFlixer(val plugin: MyFlixerPlugin) :
                                         this.name = epName
                                         this.episode = epNum.toInt()
                                         this.season = seasonNum.toInt()
+                                        this.data = epId
                                     }
                             )
                         }
             }
-            return newTvSeriesLoadResponse(name, url, TvType.TvSeries, episodes) {
+            return newTvSeriesLoadResponse(name, "", TvType.TvSeries, episodes) {
                 this.posterUrl = details.select("div.film-poster > img").attr("src")
                 this.plot = details.select("div.description").text()
                 this.rating =
@@ -131,4 +135,32 @@ class MyFlixer(val plugin: MyFlixerPlugin) :
             }
         }
     }
+
+    override suspend fun loadLinks(
+            data: String,
+            isCasting: Boolean,
+            subtitleCallback: (SubtitleFile) -> Unit,
+            callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        Log.d("Rushi: ", "$mainUrl/ajax/episode/list/$data")
+        val serversRes = app.get("$mainUrl/ajax/episode/list/$data").document.select("a.link-item")
+        serversRes.forEach { server ->
+            val linkId = server.attr("data-linkid")
+            Log.d("Rushi: ", linkId)
+            // val serverName = server.attr("title")
+            val source = app.get("$mainUrl/ajax/episode/sources/$linkId").parsedSafe<Source>()
+            Log.d("Rushi: $mainUrl/ajax/episode/sources/$linkId ", source?.link.toString())
+            loadExtractor(
+                    source?.link ?: throw ErrorLoadingException("Could not load the source"),
+                    subtitleCallback,
+                    callback
+            )
+        }
+        return true
+    }
+
+    data class Source(
+            @JsonProperty("type") var type: String,
+            @JsonProperty("link") var link: String
+    )
 }
