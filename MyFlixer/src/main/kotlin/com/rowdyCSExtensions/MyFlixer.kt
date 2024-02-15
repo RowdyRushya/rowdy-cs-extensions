@@ -150,11 +150,12 @@ class MyFlixer(val plugin: MyFlixerPlugin) :
             // val serverName = server.attr("title")
             val source = app.get("$mainUrl/ajax/episode/sources/$linkId").parsedSafe<Source>()
             Log.d("Rushi: $mainUrl/ajax/episode/sources/$linkId ", source?.link.toString())
-            loadExtractor(
-                    source?.link ?: throw ErrorLoadingException("Could not load the source"),
-                    subtitleCallback,
-                    callback
-            )
+            //     loadExtractor(
+            //             source?.link ?: throw ErrorLoadingException("Could not load the source"),
+            //             subtitleCallback,
+            //             callback
+            //     )
+            Extractors().getUrl(source?.link.toString(), null, subtitleCallback, callback)
         }
         return true
     }
