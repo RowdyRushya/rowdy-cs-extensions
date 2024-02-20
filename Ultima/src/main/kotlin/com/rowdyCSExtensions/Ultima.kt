@@ -12,7 +12,8 @@ import com.rowdyCSExtensions.UltimaPlugin.SectionInfo
 class Ultima(val plugin: UltimaPlugin) :
         MainAPI() { // all providers must be an intstance of MainAPI
     override var name = "Ultima"
-    override var supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.AnimeMovie)
+    override var supportedTypes =
+            setOf(TvType.Movie, TvType.TvSeries, TvType.AnimeMovie, TvType.Others)
     override var lang = "en"
 
     // enable this when your provider has a main page
@@ -29,7 +30,7 @@ class Ultima(val plugin: UltimaPlugin) :
 
     fun loadSections(): List<MainPageData> {
         var data: List<MainPageData> = emptyList()
-        val savedSections = UltimaPlugin.currentSections
+        val savedSections = plugin.currentSections
         savedSections.forEach { plugin ->
             plugin.sections?.forEach { section ->
                 if (section.enabled ?: false) {
@@ -41,10 +42,8 @@ class Ultima(val plugin: UltimaPlugin) :
                 }
             }
         }
-        return data
+        if (data.size.equals(0)) return mainPageOf("" to "") else return data
     }
-
-    // override val mainPage = mainPageOf("1" to "1")
 
     override val mainPage = loadSections()
 
@@ -61,17 +60,6 @@ class Ultima(val plugin: UltimaPlugin) :
                     )
             )
         }
-
-        // var section = AppUtils.parseJson < this.plugin.SectionInfo > (request.data)
-        // var provider = allProviders.find { it.name == request.name }
-        // return provider?.getMainPage(
-        //         page,
-        //         MainPageRequest(
-        //                 section.name.toString(),
-        //                 section.url.toString(),
-        //                 request.horizontalImages
-        //         )
-        // )
-        throw NotImplementedError()
+        throw ErrorLoadingException("Select sections from extension's settings page to show here.")
     }
 }

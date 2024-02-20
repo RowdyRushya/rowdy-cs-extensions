@@ -14,6 +14,12 @@ import com.lagradost.cloudstream3.plugins.Plugin
 class UltimaPlugin : Plugin() {
     var activity: AppCompatActivity? = null
 
+    var currentSections: Array<PluginInfo>
+        get() = getKey("ULTIMA_PROVIDER_LIST") ?: arrayOf(PluginInfo())
+        set(value) {
+            setKey("ULTIMA_PROVIDER_LIST", value)
+        }
+
     companion object {
         /**
          * Used to make Runnables work properly on Android 21 Otherwise you get: ERROR:D8:
@@ -28,12 +34,6 @@ class UltimaPlugin : Plugin() {
                     }
             )
         }
-
-        var currentSections: Array<PluginInfo>
-            get() = getKey("ULTIMA_PROVIDER_LIST") ?: arrayOf(PluginInfo())
-            set(value) {
-                setKey("ULTIMA_PROVIDER_LIST", value)
-            }
     }
 
     override fun load(context: Context) {
@@ -46,26 +46,66 @@ class UltimaPlugin : Plugin() {
             frag.show(activity!!.supportFragmentManager, "")
         }
 
-        currentSections = fetchSections()
+        // currentSections = getSections()
     }
 
-    fun fetchSections(): Array<PluginInfo> {
+    // fun fetchSections(): Array<PluginInfo> {
+    //     synchronized(allProviders) {
+    //         var providerList = emptyArray<PluginInfo>()
+    //         allProviders.forEach { provider ->
+    //             if (!provider.name.equals("Ultima")) {
+    //                 var mainPageList = emptyArray<SectionInfo>()
+    //                 provider.mainPage.forEach { section ->
+    //                     var sectionData =
+    //                             SectionInfo(section.name, section.data, provider.name, false)
+    //                     mainPageList += sectionData
+    //                 }
+    //                 var providerData = PluginInfo(provider.name, mainPageList)
+    //                 providerList += providerData
+    //             }
+    //         }
+    //         return providerList
+    //     }
+    // }
+
+    fun getSections(): Array<PluginInfo> {
         synchronized(allProviders) {
-            var providerList = emptyArray<PluginInfo>()
-            allProviders.forEach { provider ->
+            var providers = allProviders
+            var newProviderList = emptyArray<PluginInfo>()
+
+            providers.forEach { provider ->
                 if (!provider.name.equals("Ultima")) {
-                    var mainPageList = emptyArray<SectionInfo>()
-                    provider.mainPage.forEach { section ->
-                        var sectionData =
-                                SectionInfo(section.name, section.data, provider.name, false)
-                        mainPageList += sectionData
+                    val doesProviderExist =
+                            getKey<Array<PluginInfo>>("ULTIMA_PROVIDER_LIST")?.find {
+                                it.name == provider.name
+                            }
+                    if (doesProviderExist == null) {
+                        var mainPageList = emptyArray<SectionInfo>()
+                        provider.mainPage.forEach { section ->
+                            var sectionData =
+                                    SectionInfo(section.name, section.data, provider.name, false)
+                            mainPageList += sectionData
+                        }
+                        var providerData = PluginInfo(provider.name, mainPageList)
+                        newProviderList += providerData
+                    } else {
+                        newProviderList += doesProviderExist
                     }
-                    var providerData = PluginInfo(provider.name, mainPageList)
-                    providerList += providerData
                 }
             }
-            return providerList
+
+            if (newProviderList.size == providers.size) {
+                return newProviderList
+            } else {
+                return newProviderList
+                        .filter { new -> providers.find { new.name == it.name } != null }
+                        .toTypedArray()
+            }
         }
+    }
+
+    fun setSections(data: Array<PluginInfo>) {
+        setKey("ULTIMA_PROVIDER_LIST", data)
     }
 
     data class SectionInfo(

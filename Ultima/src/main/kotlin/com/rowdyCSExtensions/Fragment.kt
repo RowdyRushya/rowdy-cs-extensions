@@ -3,14 +3,15 @@ package com.rowdyCSExtensions
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.OnClickListener
 import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.CompoundButton.OnCheckedChangeListener
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
@@ -65,14 +66,10 @@ class UltimaFragment(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
                 plugin.resources!!.getIdentifier("settings", "layout", "com.rowdyCSExtensions")
         val settingsLayout = plugin.resources!!.getLayout(settingsLayoutId)
         val settings = inflater.inflate(settingsLayout, container, false)
-        val parentCheckBoxLayout = settings.findView<LinearLayout>("parent_list")
 
+        val parentLayout = settings.findView<LinearLayout>("parent_list")
         val parentLayoutId =
-                plugin.resources!!.getIdentifier(
-                        "parent_checkbox",
-                        "layout",
-                        "com.rowdyCSExtensions"
-                )
+                plugin.resources!!.getIdentifier("parent_layout", "layout", "com.rowdyCSExtensions")
 
         val childLayoutId =
                 plugin.resources!!.getIdentifier(
@@ -81,16 +78,26 @@ class UltimaFragment(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
                         "com.rowdyCSExtensions"
                 )
 
-        val providers = UltimaPlugin.currentSections
-        Log.d("Rushi: ", providers.toString())
+        val providers = plugin.getSections()
         providers.forEach { provider ->
             val parentElementLayout = plugin.resources!!.getLayout(parentLayoutId)
             val parentCheckBoxView = inflater.inflate(parentElementLayout, container, false)
-            val parentCheckBoxBtn = parentCheckBoxView.findView<CheckBox>("parent_checkbox")
-            parentCheckBoxBtn.text = provider.name
+            val parentTextViewBtn = parentCheckBoxView.findView<TextView>("parent_textview")
+            parentTextViewBtn.text = "▶ " + provider.name
             val childList = parentCheckBoxView.findView<LinearLayout>("child_list")
-            parentCheckBoxBtn.id = View.generateViewId()
-            // parentCheckBoxBtn.setOnCheckedChangeListener()
+            parentTextViewBtn.setOnClickListener(
+                    object : OnClickListener {
+                        override fun onClick(btn: View) {
+                            if (childList.visibility == View.VISIBLE) {
+                                childList.visibility = View.GONE
+                                parentTextViewBtn.text = "▶ " + provider.name
+                            } else {
+                                childList.visibility = View.VISIBLE
+                                parentTextViewBtn.text = "▼ " + provider.name
+                            }
+                        }
+                    }
+            )
 
             provider.sections?.forEach { section ->
                 val ChildElementLayout = plugin.resources!!.getLayout(childLayoutId)
@@ -106,17 +113,13 @@ class UltimaFragment(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
                                     isChecked: Boolean
                             ) {
                                 section.enabled = isChecked
-                                UltimaPlugin.currentSections = providers
+                                plugin.currentSections = providers
                             }
                         }
                 )
-                //  { buttonView, isChecked ->
-                //     // section.enabled = isChecked
-                //     // UltimaPlugin.currentSections = providers
-                // }
                 childList.addView(childCheckBoxView)
             }
-            parentCheckBoxLayout.addView(parentCheckBoxView)
+            parentLayout.addView(parentCheckBoxView)
         }
 
         return settings
