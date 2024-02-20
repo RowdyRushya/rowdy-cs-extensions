@@ -6,9 +6,20 @@
     android:orientation="vertical">
 
     <CheckBox
-        android:id="@+id/checkbox"
+        android:id="@+id/parent_checkbox"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:text="test" />
+
+
+    <LinearLayout
+        android:id="@+id/child_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="20dp"
+        android:paddingBottom="10dp">
+    </LinearLayout>
+
 </LinearLayout>
     

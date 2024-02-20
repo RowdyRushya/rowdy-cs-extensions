@@ -57,7 +57,7 @@ class UltimaPlugin : Plugin() {
                     var mainPageList = emptyArray<SectionInfo>()
                     provider.mainPage.forEach { section ->
                         var sectionData =
-                                SectionInfo(section.name, section.data, provider.name, true)
+                                SectionInfo(section.name, section.data, provider.name, false)
                         mainPageList += sectionData
                     }
                     var providerData = PluginInfo(provider.name, mainPageList)
@@ -72,7 +72,7 @@ class UltimaPlugin : Plugin() {
             @JsonProperty("name") var name: String? = null,
             @JsonProperty("url") var url: String? = null,
             @JsonProperty("pluginName") var pluginName: String? = null,
-            @JsonProperty("enabled") var enabled: Boolean? = true
+            @JsonProperty("enabled") var enabled: Boolean? = false
     )
 
     data class PluginInfo(

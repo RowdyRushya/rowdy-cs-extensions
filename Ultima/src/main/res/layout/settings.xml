@@ -26,7 +26,7 @@
             android:textStyle="bold" />
 
         <LinearLayout
-            android:id="@+id/sections_list"
+            android:id="@+id/parent_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
