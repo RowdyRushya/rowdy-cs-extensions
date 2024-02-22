@@ -1,0 +1,23 @@
+[
+    {
+        "iconUrl": "https://raw.githubusercontent.com/Rowdy-Avocado/Rowdycado-Extensions/master/logos/ultima.png",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/rushi-chavan/rowdy-cs-extensions",
+        "fileSize": 96013,
+        "status": 1,
+        "language": "en",
+        "authors": [
+            "RowdyRushya"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries",
+            "Anime"
+        ],
+        "version": 21,
+        "internalName": "Rowdy",
+        "description": "One stop solution for all of your media need.",
+        "url": "https://raw.githubusercontent.com/rushi-chavan/rowdy-cs-extensions/builds/Rowdy.cs3",
+        "name": "Rowdy"
+    }
+]
