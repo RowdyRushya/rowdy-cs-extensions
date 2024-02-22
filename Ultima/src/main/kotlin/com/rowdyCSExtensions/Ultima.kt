@@ -1,4 +1,4 @@
-package com.rowdyCSExtensions
+package com.KillerDogeEmpire
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.*
@@ -7,13 +7,12 @@ import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.utils.*
-import com.rowdyCSExtensions.UltimaPlugin.SectionInfo
+import com.KillerDogeEmpire.UltimaPlugin.SectionInfo
 
 class Ultima(val plugin: UltimaPlugin) :
         MainAPI() { // all providers must be an intstance of MainAPI
     override var name = "Ultima"
-    override var supportedTypes =
-            setOf(TvType.Movie, TvType.TvSeries, TvType.AnimeMovie, TvType.Others)
+    override var supportedTypes = TvType.values().toSet()
     override var lang = "en"
 
     // enable this when your provider has a main page

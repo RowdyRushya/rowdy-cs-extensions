@@ -4,13 +4,13 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.2.1")
 }
 // use an integer for version numbers
-version = 3
+version = 1
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Access all of your extensions at one place"
+    description = "[!] (This Extension has been moved to 'Avocado/Rowdy's Extensions' repo)"
     authors = listOf("RowdyRushya")
 
     /**
@@ -20,15 +20,15 @@ cloudstream {
     * 2: Slow
     * 3: Beta only
     * */
-    status = 1
+    status = 0
 
-    tvTypes = listOf("Movies", "TV Series")
+    tvTypes = listOf("All")
 
     requiresResources = true
     language = "en"
 
     // random cc logo i found
-    iconUrl = "https://myflixerz.to/images/group_1/theme_7/favicon.png"
+    iconUrl = "https://raw.githubusercontent.com/Rowdy-Avocado/Rowdycado-Extensions/master/logos/ultima.png"
 }
 
 android {

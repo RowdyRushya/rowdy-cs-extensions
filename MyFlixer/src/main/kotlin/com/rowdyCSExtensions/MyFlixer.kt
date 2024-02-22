@@ -1,6 +1,5 @@
 package com.rowdyCSExtensions
 
-import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -48,9 +47,6 @@ class MyFlixer(val plugin: MyFlixerPlugin) :
                         val poster =
                                 element.selectFirst("img.film-poster-img")?.attr("data-src")
                                         ?: return@mapNotNull null
-                        val type =
-                                element.selectFirst("div.fd-infor span.fdi-type")?.text()
-                                        ?: return@mapNotNull null
 
                         newMovieSearchResponse(title, link) { this.posterUrl = poster }
                     }
@@ -70,7 +66,7 @@ class MyFlixer(val plugin: MyFlixerPlugin) :
         val details = res.document.select("div.detail_page-infor")
         val name = details.select("h2.heading-name > a").text()
         if (type.contains("movie")) {
-            return newMovieLoadResponse(name, url, TvType.Movie, contentId) {
+            return newMovieLoadResponse(name, url, TvType.Movie, "list/" + contentId) {
                 this.posterUrl = details.select("div.film-poster > img").attr("src")
                 this.plot = details.select("div.description").text()
                 this.rating =
@@ -79,14 +75,7 @@ class MyFlixer(val plugin: MyFlixerPlugin) :
                                 .replace("N/A", "")
                                 .replace("IMDB: ", "")
                                 .toIntOrNull()
-                // this.backgroundPosterUrl = bgPoster
-                // this.year = year
-                // this.duration = res.runtime
-                // this.tags = keywords.takeIf { !it.isNullOrEmpty() } ?: genres
-                // this.recommendations = recommendations
-                // this.actors = actors
                 addTrailer(res.document.select("iframe#iframe-trailer").attr("data-src"))
-                // addImdbId("")
             }
         } else {
             val episodes = ArrayList<Episode>()
@@ -110,7 +99,7 @@ class MyFlixer(val plugin: MyFlixerPlugin) :
                                         this.name = epName
                                         this.episode = epNum.toInt()
                                         this.season = seasonNum.toInt()
-                                        this.data = epId
+                                        this.data = "servers/" + epId
                                     }
                             )
                         }
@@ -124,14 +113,7 @@ class MyFlixer(val plugin: MyFlixerPlugin) :
                                 .replace("N/A", "")
                                 .replace("IMDB: ", "")
                                 .toIntOrNull()
-                // this.backgroundPosterUrl = bgPoster
-                // this.year = year
-                // this.duration = res.runtime
-                // this.tags = keywords.takeIf { !it.isNullOrEmpty() } ?: genres
-                // this.recommendations = recommendations
-                // this.actors = actors
                 addTrailer(res.document.select("iframe#iframe-trailer").attr("data-src"))
-                // addImdbId("")
             }
         }
     }
@@ -142,20 +124,15 @@ class MyFlixer(val plugin: MyFlixerPlugin) :
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Rushi: ", "$mainUrl/ajax/episode/list/$data")
-        val serversRes = app.get("$mainUrl/ajax/episode/list/$data").document.select("a.link-item")
+        val serversRes = app.get("$mainUrl/ajax/episode/$data").document.select("a.link-item")
         serversRes.forEach { server ->
-            val linkId = server.attr("data-linkid")
-            Log.d("Rushi: ", linkId)
-            // val serverName = server.attr("title")
+            val linkId =
+                    if (server.attr("data-linkid").isNullOrEmpty()) server.attr("data-id")
+                    else server.attr("data-linkid")
             val source = app.get("$mainUrl/ajax/episode/sources/$linkId").parsedSafe<Source>()
-            Log.d("Rushi: $mainUrl/ajax/episode/sources/$linkId ", source?.link.toString())
-            //     loadExtractor(
-            //             source?.link ?: throw ErrorLoadingException("Could not load the source"),
-            //             subtitleCallback,
-            //             callback
-            //     )
-            Extractors().getUrl(source?.link.toString(), null, subtitleCallback, callback)
+            if (source?.link.toString().contains("megacloud.tv/embed-1"))
+                    Megacloud2().getUrl(source?.link.toString(), null, subtitleCallback, callback)
+            else loadExtractor(source?.link.toString(), subtitleCallback, callback)
         }
         return true
     }

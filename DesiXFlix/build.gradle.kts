@@ -10,7 +10,7 @@ version = 1
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "For all horny fappers out there."
+    description = "[!] (This Extension has been moved to 'Avocado/Rowdy's Extensions' repo)"
     authors = listOf("RowdyRushya")
 
     /**
@@ -20,7 +20,7 @@ cloudstream {
     * 2: Slow
     * 3: Beta only
     * */
-    status = 1
+    status = 0
 
     tvTypes = listOf("NSFW")
 

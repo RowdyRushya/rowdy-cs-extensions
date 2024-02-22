@@ -13,10 +13,5 @@ class MyFlixerPlugin : Plugin() {
         activity = context as AppCompatActivity
         // All providers should be added in this manner
         registerMainAPI(MyFlixer(this))
-
-        openSettings = { ctx ->
-            val frag = Fragment(this)
-            frag.show(activity!!.supportFragmentManager, "sexFrag")
-        }
     }
 }

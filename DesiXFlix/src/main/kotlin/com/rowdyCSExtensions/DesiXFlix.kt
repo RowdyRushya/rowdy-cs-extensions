@@ -41,27 +41,16 @@ class DesiXFlix(val plugin: DesiXFlixPlugin) :
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = request.data + page
         val res = app.get(url)
-
         if (res.code != 200) throw ErrorLoadingException("Could not load data")
-
         val home = searchResponseBuilder(res.document)
-        // res.document.select("article > a").mapNotNull { element ->
-        //     val title = element.attr("title")
-        //     val link = element.attr("href")
-        //     val poster = element.select("img").attr("data-src")
 
-        //     newMovieSearchResponse(title, link) { this.posterUrl = poster }
-        // }
-
-        return newHomePageResponse(request.name, home, true)
+        return newHomePageResponse(HomePageList(request.name, home, true), true)
     }
 
     override suspend fun load(url: String): LoadResponse {
         val res = app.get(url)
 
         if (res.code != 200) throw ErrorLoadingException("Could not load data" + url)
-
-        // val contentId = res.document.select("div.detail_page-watch").attr("data-id")
         val poster =
                 res.document
                         .selectFirst("div.video-player > meta[itemprop=thumbnailUrl]")
@@ -73,18 +62,7 @@ class DesiXFlix(val plugin: DesiXFlixPlugin) :
         val details = res.document.select("div#video-about")
         val name = details.select("div.more > h2").text()
 
-        return newMovieLoadResponse(name, url, TvType.Movie, embedUrl) {
-            this.posterUrl = poster
-            // this.plot = details.select("div.description").text()
-            // this.backgroundPosterUrl = bgPoster
-            // this.year = year
-            // this.duration = res.runtime
-            // this.tags = keywords.takeIf { !it.isNullOrEmpty() } ?: genres
-            // this.recommendations = recommendations
-            // this.actors = actors
-            // addTrailer(res.document.select("iframe#iframe-trailer").attr("data-src"))
-            // addImdbId("")
-        }
+        return newMovieLoadResponse(name, url, TvType.NSFW, embedUrl) { this.posterUrl = poster }
     }
 
     override suspend fun loadLinks(
@@ -94,7 +72,6 @@ class DesiXFlix(val plugin: DesiXFlixPlugin) :
             callback: (ExtractorLink) -> Unit
     ): Boolean {
         D0000dExtractor().getUrl(data, data)?.forEach { link -> callback.invoke(link) }
-
         return true
     }
 

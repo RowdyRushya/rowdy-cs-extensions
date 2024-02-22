@@ -1,4 +1,4 @@
-package com.rowdyCSExtensions
+package com.KillerDogeEmpire
 
 import android.graphics.drawable.Drawable
 import android.os.Build
@@ -63,22 +63,22 @@ class UltimaFragment(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
 
         // Inflate the layout for this fragment
         val settingsLayoutId =
-                plugin.resources!!.getIdentifier("settings", "layout", "com.rowdyCSExtensions")
+                plugin.resources!!.getIdentifier("settings", "layout", "com.KillerDogeEmpire")
         val settingsLayout = plugin.resources!!.getLayout(settingsLayoutId)
         val settings = inflater.inflate(settingsLayout, container, false)
 
         val parentLayout = settings.findView<LinearLayout>("parent_list")
         val parentLayoutId =
-                plugin.resources!!.getIdentifier("parent_layout", "layout", "com.rowdyCSExtensions")
+                plugin.resources!!.getIdentifier("parent_layout", "layout", "com.KillerDogeEmpire")
 
         val childLayoutId =
                 plugin.resources!!.getIdentifier(
                         "child_checkbox",
                         "layout",
-                        "com.rowdyCSExtensions"
+                        "com.KillerDogeEmpire"
                 )
 
-        val providers = plugin.getSections()
+        val providers = plugin.fetchSections()
         providers.forEach { provider ->
             val parentElementLayout = plugin.resources!!.getLayout(parentLayoutId)
             val parentCheckBoxView = inflater.inflate(parentElementLayout, container, false)

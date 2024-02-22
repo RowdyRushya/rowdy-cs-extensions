@@ -1,4 +1,4 @@
-package com.rowdyCSExtensions
+package com.KillerDogeEmpire
 
 import android.content.Context
 import android.os.Handler
@@ -21,10 +21,6 @@ class UltimaPlugin : Plugin() {
         }
 
     companion object {
-        /**
-         * Used to make Runnables work properly on Android 21 Otherwise you get: ERROR:D8:
-         * Invoke-customs are only supported starting with Android O (--min-api 26)
-         */
         inline fun Handler.postFunction(crossinline function: () -> Unit) {
             this.post(
                     object : Runnable {
@@ -41,34 +37,13 @@ class UltimaPlugin : Plugin() {
         // All providers should be added in this manner
         registerMainAPI(Ultima(this))
 
-        openSettings = { ctx ->
+        openSettings = {
             val frag = UltimaFragment(this)
             frag.show(activity!!.supportFragmentManager, "")
         }
-
-        // currentSections = getSections()
     }
 
-    // fun fetchSections(): Array<PluginInfo> {
-    //     synchronized(allProviders) {
-    //         var providerList = emptyArray<PluginInfo>()
-    //         allProviders.forEach { provider ->
-    //             if (!provider.name.equals("Ultima")) {
-    //                 var mainPageList = emptyArray<SectionInfo>()
-    //                 provider.mainPage.forEach { section ->
-    //                     var sectionData =
-    //                             SectionInfo(section.name, section.data, provider.name, false)
-    //                     mainPageList += sectionData
-    //                 }
-    //                 var providerData = PluginInfo(provider.name, mainPageList)
-    //                 providerList += providerData
-    //             }
-    //         }
-    //         return providerList
-    //     }
-    // }
-
-    fun getSections(): Array<PluginInfo> {
+    fun fetchSections(): Array<PluginInfo> {
         synchronized(allProviders) {
             var providers = allProviders
             var newProviderList = emptyArray<PluginInfo>()
@@ -102,10 +77,6 @@ class UltimaPlugin : Plugin() {
                         .toTypedArray()
             }
         }
-    }
-
-    fun setSections(data: Array<PluginInfo>) {
-        setKey("ULTIMA_PROVIDER_LIST", data)
     }
 
     data class SectionInfo(

@@ -10,7 +10,7 @@ version = 1
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Watch movies and series from Flixerz"
+    description = "[!] (This Extension has been moved to 'Avocado/Rowdy's Extensions' repo)"
     authors = listOf("RowdyRushya")
 
     /**
@@ -20,7 +20,7 @@ cloudstream {
     * 2: Slow
     * 3: Beta only
     * */
-    status = 1
+    status = 0
 
     tvTypes = listOf("Movies", "TV Series")
 
@@ -28,7 +28,7 @@ cloudstream {
     language = "en"
 
     // random cc logo i found
-    iconUrl = "https://myflixerz.to/images/group_1/theme_7/favicon.png"
+    iconUrl = "https://myflixerz.me/images/favicon.png"
 }
 
 android {
