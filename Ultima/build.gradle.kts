@@ -4,13 +4,13 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.2.1")
 }
 // use an integer for version numbers
-version = 1
+version = 5
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "[!] (This Extension has been moved to 'Avocado/Rowdy's Extensions' repo)"
+    description = "The ultimate All-in-One home screen to access all of your extensions at one place (You need to select/deselect sections in Ultima's settings to load other extensions on home screen)"
     authors = listOf("RowdyRushya")
 
     /**
@@ -20,7 +20,7 @@ cloudstream {
     * 2: Slow
     * 3: Beta only
     * */
-    status = 0
+    status = 1
 
     tvTypes = listOf("All")
 

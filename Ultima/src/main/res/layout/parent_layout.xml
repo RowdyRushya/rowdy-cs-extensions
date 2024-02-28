@@ -9,7 +9,7 @@
         android:id="@+id/parent_textview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingBottom="10dp"
+        android:padding="10dp"
         android:layout_marginStart="10dp"
         android:text="parent_name"
         android:textSize="17sp"

@@ -1,5 +1,6 @@
 package com.KillerDogeEmpire
 
+import com.KillerDogeEmpire.UltimaPlugin.SectionInfo
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.allProviders
@@ -7,18 +8,14 @@ import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.utils.*
-import com.KillerDogeEmpire.UltimaPlugin.SectionInfo
+import kotlin.collections.forEach
 
-class Ultima(val plugin: UltimaPlugin) :
-        MainAPI() { // all providers must be an intstance of MainAPI
+class Ultima(val plugin: UltimaPlugin) : MainAPI() {
     override var name = "Ultima"
     override var supportedTypes = TvType.values().toSet()
     override var lang = "en"
-
-    // enable this when your provider has a main page
     override val hasMainPage = true
 
-    // this function gets called when you search for something
     override suspend fun search(query: String): List<SearchResponse> {
         return listOf<SearchResponse>()
     }
@@ -29,16 +26,17 @@ class Ultima(val plugin: UltimaPlugin) :
 
     fun loadSections(): List<MainPageData> {
         var data: List<MainPageData> = emptyList()
-        val savedSections = plugin.currentSections
-        savedSections.forEach { plugin ->
-            plugin.sections?.forEach { section ->
-                if (section.enabled ?: false) {
-                    data +=
-                            mainPageOf(
-                                    "${mapper.writeValueAsString(section)}" to
-                                            "${section.pluginName}"
-                            )
-                }
+        var savedSections: List<SectionInfo> = emptyList()
+        val savedPlugins = plugin.currentSections
+        savedPlugins.forEach { plugin ->
+            plugin.sections?.forEach { section -> savedSections += section }
+        }
+        savedSections.sortedByDescending { it.priority }.forEach { section ->
+            if (section.enabled) {
+                data +=
+                        mainPageOf(
+                                "${mapper.writeValueAsString(section)}" to "${section.pluginName}"
+                        )
             }
         }
         if (data.size.equals(0)) return mainPageOf("" to "") else return data
