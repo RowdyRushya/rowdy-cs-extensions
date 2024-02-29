@@ -7,22 +7,23 @@ import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.utils.*
+import org.jsoup.nodes.Document
 
-class MyFlixer(val plugin: MyFlixerPlugin) :
-        MainAPI() { // all providers must be an intstance of MainAPI
+class MyFlixer(val plugin: MyFlixerPlugin) : MainAPI() {
     override var mainUrl = "https://myflixerz.to"
     override var name = "MyFlixer"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
-
     override var lang = "en"
-
-    // enable this when your provider has a main page
     override val hasMainPage = true
 
-    // this function gets called when you search for something
     override suspend fun search(query: String): List<SearchResponse> {
-        return listOf<SearchResponse>()
+        val url = "$mainUrl/search/${query.replace(" ", "-")}"
+        val response = app.get(url)
+        if (response.code == 200) return searchResponseBuilder(response.document)
+        else return listOf<SearchResponse>()
     }
+
+    override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override val mainPage =
             mainPageOf(
@@ -34,27 +35,14 @@ class MyFlixer(val plugin: MyFlixerPlugin) :
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = request.data + page
-        val res = app.get(url)
-        if (res.code == 200) {
-            val home =
-                    res.document.select("div.flw-item").mapNotNull { element ->
-                        val title =
-                                element.selectFirst("h2.film-name > a")?.attr("title")
-                                        ?: return@mapNotNull null
-                        val link =
-                                element.selectFirst("h2.film-name > a")?.attr("href")
-                                        ?: return@mapNotNull null
-                        val poster =
-                                element.selectFirst("img.film-poster-img")?.attr("data-src")
-                                        ?: return@mapNotNull null
-
-                        newMovieSearchResponse(title, link) { this.posterUrl = poster }
-                    }
-
-            return newHomePageResponse(request.name, home, true)
-        } else {
-            throw ErrorLoadingException("Could not load data")
-        }
+        val response = app.get(url)
+        if (response.code == 200)
+                return newHomePageResponse(
+                        request.name,
+                        searchResponseBuilder(response.document),
+                        true
+                )
+        else throw ErrorLoadingException("Could not load data")
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -141,4 +129,22 @@ class MyFlixer(val plugin: MyFlixerPlugin) :
             @JsonProperty("type") var type: String,
             @JsonProperty("link") var link: String
     )
+
+    private fun searchResponseBuilder(webDocument: Document): List<SearchResponse> {
+        val searchCollection =
+                webDocument.select("div.flw-item").mapNotNull { element ->
+                    val title =
+                            element.selectFirst("h2.film-name > a")?.attr("title")
+                                    ?: return@mapNotNull null
+                    val link =
+                            element.selectFirst("h2.film-name > a")?.attr("href")
+                                    ?: return@mapNotNull null
+                    val poster =
+                            element.selectFirst("img.film-poster-img")?.attr("data-src")
+                                    ?: return@mapNotNull null
+
+                    newMovieSearchResponse(title, link) { this.posterUrl = poster }
+                }
+        return searchCollection
+    }
 }

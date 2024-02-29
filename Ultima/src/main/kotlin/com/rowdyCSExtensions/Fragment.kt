@@ -3,7 +3,6 @@ package com.KillerDogeEmpire
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.OnClickListener
@@ -88,7 +87,6 @@ class UltimaFragment(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
         saveBtn.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
-                        Log.d("Rushi", "loading")
                         val pluginData =
                                 PluginManager.getPluginsOnline().find {
                                     it.internalName.contains("Ultima")

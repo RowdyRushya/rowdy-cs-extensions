@@ -46,17 +46,34 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         if (!request.name.isNullOrEmpty()) {
-            val realSection: SectionInfo = AppUtils.parseJson<SectionInfo>(request.data)
-            val provider = allProviders.find { it.name == request.name }
-            return provider?.getMainPage(
-                    page,
-                    MainPageRequest(
-                            realSection.pluginName + ": " + realSection.name.toString(),
-                            realSection.url.toString(),
-                            request.horizontalImages
-                    )
-            )
+            try {
+                val realSection: SectionInfo = AppUtils.parseJson<SectionInfo>(request.data)
+                val provider = allProviders.find { it.name == request.name }
+                return provider?.getMainPage(
+                        page,
+                        MainPageRequest(
+                                realSection.pluginName + ": " + realSection.name.toString(),
+                                realSection.url.toString(),
+                                request.horizontalImages
+                        )
+                )
+            } catch (e: Throwable) {
+                return null
+            }
+        } else
+                throw ErrorLoadingException(
+                        "Select sections from extension's settings page to show here."
+                )
+    }
+
+    override suspend fun load(url: String): LoadResponse {
+        val enabledPlugins = mainPage.map { it.name }
+        val provider = allProviders.filter { it.name in enabledPlugins }
+        for (i in 0 until (provider.size)) {
+            try {
+                return provider.get(i).load(url)!!
+            } catch (e: Throwable) {}
         }
-        throw ErrorLoadingException("Select sections from extension's settings page to show here.")
+        return newMovieLoadResponse("Welcome to Ultima", "", TvType.Others, "")
     }
 }
