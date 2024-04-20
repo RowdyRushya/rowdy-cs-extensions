@@ -3,7 +3,6 @@ package com.RowdyAvocado
 import android.content.Context
 import android.os.Handler
 import androidx.appcompat.app.AppCompatActivity
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.MainActivity.Companion.afterPluginsLoadedEvent
@@ -57,8 +56,8 @@ class RowdyPlugin : Plugin() {
             listOf(
                     "CineZone" to "https://www.cinezone.to",
                     "Superstream" to "https://www.superstream.to",
-                    // "VidSrcTo" to "https://www.vidsrc.to"
-                    )
+                    "VidSrcTo" to "https://www.vidsrc.to"
+            )
 
     private val animePrdList =
             listOf(
@@ -155,10 +154,3 @@ class RowdyPlugin : Plugin() {
         }
     }
 }
-
-data class Provider(
-        @JsonProperty("name") var name: String? = null,
-        @JsonProperty("domain") var domain: String? = null,
-        @JsonProperty("enabled") var enabled: Boolean = false,
-        @JsonProperty("userModified") var userModified: Boolean = false,
-)
