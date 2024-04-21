@@ -71,7 +71,7 @@ object AniwaveUtils {
 data class Provider(
         @JsonProperty("name") var name: String? = null,
         @JsonProperty("domain") var domain: String? = null,
-        @JsonProperty("enabled") var enabled: Boolean = false,
+        @JsonProperty("enabled") var enabled: Boolean = true,
         @JsonProperty("userModified") var userModified: Boolean = false,
 )
 
