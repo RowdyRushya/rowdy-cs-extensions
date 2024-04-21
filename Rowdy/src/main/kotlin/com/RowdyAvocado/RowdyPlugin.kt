@@ -61,7 +61,7 @@ class RowdyPlugin : Plugin() {
 
     private val animePrdList =
             listOf(
-                    "Aniwave" to "https://www.aniwave.to",
+                    "Aniwave" to "https://aniwave.to",
                     "Anitaku" to "https://www.anitaku.com",
                     "HiAnime" to "https://www.hianime.com"
             )

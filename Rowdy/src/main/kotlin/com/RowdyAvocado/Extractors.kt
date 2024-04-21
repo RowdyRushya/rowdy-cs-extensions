@@ -1,7 +1,7 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-import android.util.Log
+
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
@@ -61,16 +61,17 @@ class AnimeExtractors : ExtractorApi() {
                         .document
         val id =
                 searchPage
-                        .select("div#list-items")
-                        .find {
-                            it.select("div.info div.b1 > a").attr("data-jp").equals(data.name, true)
-                        }
-                        ?.selectFirst("div.poster")
+                        // .select("div#list-items")
+                        // .find {
+                        //     it.select("div.info div.b1 > a").attr("data-jp").equals(data.name,
+                        // true)
+                        // }
+                        .selectFirst("div.poster")
                         ?.attr("data-tip")
                         ?.split("?/")
                         ?.get(0)
                         ?: throw Error("Could not find anime id from search page")
-        val seasonDataUrl = "$url/ajax/episode/list/$id?vrf=${RowdyUtils.vrfEncrypt(id)}"
+        val seasonDataUrl = "$url/ajax/episode/list/$id?vrf=${AniwaveUtils.vrfEncrypt(id)}"
         val seasonData =
                 app.get(seasonDataUrl).parsedSafe<ApiResponseHTML>()?.html
                         ?: throw Error("Could not fetch data for $seasonDataUrl")
@@ -82,7 +83,7 @@ class AnimeExtractors : ExtractorApi() {
                         ?.attr("data-ids")
                         ?: throw Error("Could not find episode IDs in response")
         val episodeDataUrl =
-                "$url/ajax/server/list/$episodeIds?vrf=${RowdyUtils.vrfEncrypt(episodeIds)}"
+                "$url/ajax/server/list/$episodeIds?vrf=${AniwaveUtils.vrfEncrypt(episodeIds)}"
         val episodeData =
                 app.get(episodeDataUrl).parsedSafe<ApiResponseHTML>()?.html
                         ?: throw Error("Could not fetch server data for $episodeDataUrl")
@@ -92,15 +93,14 @@ class AnimeExtractors : ExtractorApi() {
             it.select("li").amap {
                 val serverId = it.attr("data-sv-id")
                 val dataId = it.attr("data-link-id")
-                val serverResUrl = "$url/ajax/server/$dataId?vrf=${RowdyUtils.vrfEncrypt(dataId)}"
+                val serverResUrl = "$url/ajax/server/$dataId?vrf=${AniwaveUtils.vrfEncrypt(dataId)}"
                 val serverRes = app.get(serverResUrl).parsedSafe<AniwaveResponseServer>()
                 val encUrl =
                         serverRes?.result?.url
                                 ?: throw Error("Could not fetch server url for $serverResUrl")
-                val decUrl = RowdyUtils.vrfDecrypt(encUrl)
+                val decUrl = AniwaveUtils.vrfDecrypt(encUrl)
                 val domain = "https://" + URI(decUrl).host
-                Log.d("rowdy", decUrl + " : " + domain)
-                when (RowdyUtils.aniwaveServerName(serverId)) {
+                when (AniwaveUtils.aniwaveServerName(serverId)) {
                     "Vidplay" ->
                             AnyVidplay(dubType, domain)
                                     .getUrl(decUrl, referer, subtitleCallback, callback)

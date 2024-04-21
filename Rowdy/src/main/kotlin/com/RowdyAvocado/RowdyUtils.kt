@@ -6,7 +6,7 @@ import java.net.URLDecoder
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 
-object RowdyUtils {
+object AniwaveUtils {
 
     fun vrfEncrypt(input: String): String {
         val rc4Key = SecretKeySpec("tGn6kIpVXBEUmqjD".toByteArray(), "RC4")

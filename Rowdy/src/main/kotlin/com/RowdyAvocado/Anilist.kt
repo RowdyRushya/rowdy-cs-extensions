@@ -20,6 +20,7 @@ class Anilist(val plugin: RowdyPlugin) : MainAPI() {
     override val supportedSyncNames = setOf(SyncIdName.Anilist)
     override val hasMainPage = true
     override val hasQuickSearch = false
+    private val api = AniListApi(1)
 
     val mapper = jacksonObjectMapper()
 
@@ -46,18 +47,18 @@ class Anilist(val plugin: RowdyPlugin) : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         var data = emptyList<SearchResponse>()
-        AniListApi(1)
-                .getPersonalLibrary()
+        api.getPersonalLibrary()
                 .allLibraryLists
                 .find { it.name.asString(plugin.activity!!).equals(request.data) }
                 ?.let { data = it.items.mapNotNull { convertToSearchRespose(it) } }
-        return newHomePageResponse(request.name, data, false)
+        return if (data.isNotEmpty()) newHomePageResponse(request.name, data, false) else null
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val id = AniListApi(1).getIdFromUrl(url)
-        val data = AniListApi(1).getResult(id)
-        val seasonData = AniListApi(1).getAllSeasons(id.toInt())
+        val id = api.getIdFromUrl(url)
+        val data = api.getResult(id)
+
+        val seasonData = api.getAllSeasons(id.toInt())
         var episodes = emptyList<Episode>()
         var sCounter = 0
         seasonData.forEach { season ->
