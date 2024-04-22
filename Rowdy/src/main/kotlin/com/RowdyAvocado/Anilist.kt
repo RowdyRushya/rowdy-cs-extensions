@@ -5,7 +5,9 @@ package com.RowdyAvocado
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
@@ -17,13 +19,14 @@ import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.Media
 import com.lagradost.cloudstream3.utils.*
 
 class Anilist(val plugin: RowdyPlugin) : MainAPI() {
-    override var name = Anilist.name
+    override var name = Companion.name
+    override var mainUrl = Companion.mainUrl
     override var supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
     override var lang = "en"
     override val supportedSyncNames = setOf(SyncIdName.Anilist)
     override val hasMainPage = true
     override val hasQuickSearch = false
-    private val api = AniListApi(1)
+    private val api: SyncAPI = AniListApi(1)
 
     val mapper = jacksonObjectMapper()
 
@@ -66,13 +69,13 @@ class Anilist(val plugin: RowdyPlugin) : MainAPI() {
 
         return newAnimeSearchResponse(
                 item.title.english ?: "",
-                "https://anilist.co/anime/${item.id}/",
+                "https://anilist.co/anime/${item.id}",
                 TvType.Anime
         ) { this.posterUrl = item.coverImage.large }
     }
 
     private suspend fun anilistAPICall(query: String): AnilistData? {
-        val url = Anilist.apiUrl
+        val url = Companion.apiUrl
         val res =
                 app.post(
                         url,
@@ -93,7 +96,7 @@ class Anilist(val plugin: RowdyPlugin) : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         if (request.name.equals("Personal")) {
             var homePageList = emptyList<HomePageList>()
-            api.getPersonalLibrary().allLibraryLists.forEach {
+            api.getPersonalLibrary()?.allLibraryLists?.forEach {
                 if (it.items.isNotEmpty()) {
                     val items = it.items.mapNotNull { libraryItemToSearchRespose(it) }
                     homePageList +=
@@ -103,7 +106,7 @@ class Anilist(val plugin: RowdyPlugin) : MainAPI() {
                             )
                 }
             }
-            return newHomePageResponse(homePageList)
+            return newHomePageResponse(homePageList, false)
         } else {
             val res = anilistAPICall(queries(request.data, page))
             val data =
@@ -114,35 +117,28 @@ class Anilist(val plugin: RowdyPlugin) : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val id = api.getIdFromUrl(url)
-        val data = api.getResult(id)
-
-        val seasonData = api.getAllSeasons(id.toInt())
+        val id = url.substringAfter("anime/").removeSuffix("/")
+        val data: SyncAPI.SyncResult? = api.getResult(id)
         var episodes = emptyList<Episode>()
-        var sCounter = 0
-        seasonData.forEach { season ->
-            season?.let {
-                sCounter += 1
-                val nextAiringEpisode = season.data.Media.nextAiringEpisode
-                val epCount =
-                        if (nextAiringEpisode == null) season.data.Media.episodes ?: 0
-                        else (nextAiringEpisode.episode ?: 1) - 1
-                for (i in 1..epCount) {
-                    val name = season.data.Media.title?.english ?: season.data.Media.title?.romaji
-                    episodes +=
-                            newEpisode("") {
-                                this.season = sCounter
-                                this.episode = i
-                                this.data =
-                                        mapper.writeValueAsString(
-                                                EpisodeData(name, null, sCounter, i)
-                                        )
-                            }
-                }
+        var year = data?.startDate?.div(1000)?.div(86400)?.div(365)?.plus(1970)?.toInt()
+
+        data?.let {
+            val epCount = data.nextAiring?.episode?.minus(1) ?: data.totalEpisodes ?: 0
+            for (i in 1..epCount) {
+                episodes +=
+                        newEpisode("") {
+                            this.season = 1
+                            this.episode = i
+                            this.data =
+                                    mapper.writeValueAsString(
+                                            EpisodeData(data.title, year, this.season, i)
+                                    )
+                        }
             }
         }
-        return newAnimeLoadResponse(data.title ?: "", url, TvType.Anime) {
-            addAniListId(id.toInt())
+
+        return newAnimeLoadResponse(data?.title ?: "", url, TvType.Anime) {
+            if (Companion.name.equals("Anilist")) addAniListId(id.toInt()) else addMalId(id.toInt())
             addEpisodes(DubStatus.Subbed, episodes)
         }
     }

@@ -77,7 +77,7 @@ data class Provider(
 
 data class EpisodeData(
         @JsonProperty("name") var name: String? = null,
-        @JsonProperty("seasonYear") var seasonYear: String? = null,
+        @JsonProperty("seasonYear") var seasonYear: Int? = null,
         @JsonProperty("sNum") var sNum: Int? = null,
         @JsonProperty("epNum") var epNum: Int? = null
 )

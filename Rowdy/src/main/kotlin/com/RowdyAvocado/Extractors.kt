@@ -1,7 +1,7 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
@@ -54,22 +54,17 @@ class AnimeExtractors : ExtractorApi() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
+        Log.d(
+                "rowdy",
+                "$url/filter?keyword=${data.name}&year[]=${data.seasonYear?:""}&sort=most_relevance"
+        )
         val searchPage =
                 app.get(
-                                "$url/filter?keyword=${data.name}&year[]=${data.seasonYear ?: ""}&sort=most_relevance"
+                                "$url/filter?keyword=${data.name}&year[]=${data.seasonYear?:""}&sort=most_relevance"
                         )
                         .document
         val id =
-                searchPage
-                        // .select("div#list-items")
-                        // .find {
-                        //     it.select("div.info div.b1 > a").attr("data-jp").equals(data.name,
-                        // true)
-                        // }
-                        .selectFirst("div.poster")
-                        ?.attr("data-tip")
-                        ?.split("?/")
-                        ?.get(0)
+                searchPage.selectFirst("div.poster")?.attr("data-tip")?.split("?/")?.get(0)
                         ?: throw Error("Could not find anime id from search page")
         val seasonDataUrl = "$url/ajax/episode/list/$id?vrf=${AniwaveUtils.vrfEncrypt(id)}"
         val seasonData =
