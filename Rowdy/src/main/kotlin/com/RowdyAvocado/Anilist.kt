@@ -3,14 +3,8 @@ package com.RowdyAvocado
 // import android.util.Log
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse
-import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
-import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.syncproviders.SyncAPI
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi
@@ -18,7 +12,7 @@ import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.LikePageInf
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.Media
 import com.lagradost.cloudstream3.utils.*
 
-class Anilist(val plugin: RowdyPlugin) : MainAPI() {
+class Anilist(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
     override var name = Companion.name
     override var mainUrl = Companion.mainUrl
     override var supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
@@ -26,9 +20,10 @@ class Anilist(val plugin: RowdyPlugin) : MainAPI() {
     override val supportedSyncNames = setOf(SyncIdName.Anilist)
     override val hasMainPage = true
     override val hasQuickSearch = false
-    private val api: SyncAPI = AniListApi(1)
+    override val type = Type.ANIME
+    override val api: SyncAPI = AniListApi(1)
 
-    val mapper = jacksonObjectMapper()
+    // val addId2: (id: Int?): Unit = ::addAniListId
 
     companion object {
         val name = "Anilist"
@@ -59,21 +54,6 @@ class Anilist(val plugin: RowdyPlugin) : MainAPI() {
         }
     }
 
-    private fun libraryItemToSearchRespose(item: SyncAPI.LibraryItem): SearchResponse {
-        return newAnimeSearchResponse(item.name, item.url, item.type ?: TvType.Anime) {
-            this.posterUrl = item.posterUrl
-        }
-    }
-
-    private fun mediaToSearchRespose(item: Media): SearchResponse {
-
-        return newAnimeSearchResponse(
-                item.title.english ?: "",
-                "https://anilist.co/anime/${item.id}",
-                TvType.Anime
-        ) { this.posterUrl = item.coverImage.large }
-    }
-
     private suspend fun anilistAPICall(query: String): AnilistData? {
         val url = Companion.apiUrl
         val res =
@@ -93,69 +73,21 @@ class Anilist(val plugin: RowdyPlugin) : MainAPI() {
         return parsed?.data
     }
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
-        if (request.name.equals("Personal")) {
-            var homePageList = emptyList<HomePageList>()
-            api.getPersonalLibrary()?.allLibraryLists?.forEach {
-                if (it.items.isNotEmpty()) {
-                    val items = it.items.mapNotNull { libraryItemToSearchRespose(it) }
-                    homePageList +=
-                            HomePageList(
-                                    "${request.name}: ${it.name.asString(plugin.activity!!)}",
-                                    items
-                            )
+    override suspend fun buildSearchResposeList(
+            page: Int,
+            request: MainPageRequest
+    ): Pair<List<SearchResponse>, Boolean> {
+        val res = anilistAPICall(queries(request.data, page))
+        val data =
+                res?.page?.media?.map {
+                    newAnimeSearchResponse(
+                            it.title.english ?: "",
+                            "https://anilist.co/anime/${it.id}",
+                            TvType.Anime
+                    ) { this.posterUrl = it.coverImage.large }
                 }
-            }
-            return newHomePageResponse(homePageList, false)
-        } else {
-            val res = anilistAPICall(queries(request.data, page))
-            val data =
-                    res?.page?.media?.map { mediaToSearchRespose(it) }
-                            ?: throw Exception("Unable to convert api response to search response")
-            return newHomePageResponse(request.name, data, res.page.pageInfo?.hasNextPage)
-        }
-    }
-
-    override suspend fun load(url: String): LoadResponse {
-        val id = url.substringAfter("anime/").removeSuffix("/")
-        val data: SyncAPI.SyncResult? = api.getResult(id)
-        var episodes = emptyList<Episode>()
-        var year = data?.startDate?.div(1000)?.div(86400)?.div(365)?.plus(1970)?.toInt()
-
-        data?.let {
-            val epCount = data.nextAiring?.episode?.minus(1) ?: data.totalEpisodes ?: 0
-            for (i in 1..epCount) {
-                episodes +=
-                        newEpisode("") {
-                            this.season = 1
-                            this.episode = i
-                            this.data =
-                                    mapper.writeValueAsString(
-                                            EpisodeData(data.title, year, this.season, i)
-                                    )
-                        }
-            }
-        }
-
-        return newAnimeLoadResponse(data?.title ?: "", url, TvType.Anime) {
-            if (Companion.name.equals("Anilist")) addAniListId(id.toInt()) else addMalId(id.toInt())
-            addEpisodes(DubStatus.Subbed, episodes)
-        }
-    }
-
-    override suspend fun loadLinks(
-            data: String,
-            isCasting: Boolean,
-            subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        plugin.animeProviders.toList().amap {
-            if (it.enabled) {
-                AnimeExtractors()
-                        .getUrl(data, mapper.writeValueAsString(it), subtitleCallback, callback)
-            }
-        }
-        return true
+                        ?: throw Exception("Unable to convert api response to search response")
+        return Pair(data, false)
     }
 
     data class AnilistAPIResponse(

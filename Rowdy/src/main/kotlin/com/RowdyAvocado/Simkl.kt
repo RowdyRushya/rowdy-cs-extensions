@@ -1,30 +1,26 @@
 package com.RowdyAvocado
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.syncproviders.SyncAPI
+import com.lagradost.cloudstream3.syncproviders.SyncIdName
+import com.lagradost.cloudstream3.syncproviders.providers.SimklApi
 import com.lagradost.cloudstream3.utils.*
 
-class Simkl(val plugin: RowdyPlugin) : MainAPI() {
-    override var name = "Simkl"
-    override var supportedTypes = TvType.values().toSet()
+class Simkl(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
+    override var name = Companion.name
+    override var mainUrl = Companion.mainUrl
+    override var supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.AsianDrama)
     override var lang = "en"
+    override val supportedSyncNames = setOf(SyncIdName.Simkl)
     override val hasMainPage = true
     override val hasQuickSearch = false
+    override val type = Type.ANIME
+    override val api: SyncAPI = SimklApi(1)
 
-    val mapper = jacksonObjectMapper()
-
-    override val mainPage = mainPageOf("" to "")
-
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
-        val providers = plugin.mediaProviders.map { if (it.enabled) it.name else null }
-        throw ErrorLoadingException(
-                "Welcome to Simkl. You have enabled following providers. ${providers.toString()}"
-        )
-    }
-
-    override suspend fun load(url: String): LoadResponse {
-        return newMovieLoadResponse("Welcome to Simkl", "", TvType.Others, "")
+    companion object {
+        val name = "Simkl"
+        var mainUrl = "https://simkl.com"
+        val apiUrl = "https://api.simkl.com"
     }
 }

@@ -1,7 +1,7 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-import android.util.Log
+
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
@@ -19,10 +19,11 @@ import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import org.jsoup.Jsoup
 
-class AnimeExtractors : ExtractorApi() {
+class RowdyExtractor(type: Type) : ExtractorApi() {
     override val mainUrl = Anilist.mainUrl
     override val name = Anilist.name
     override val requiresReferer = false
+    private val type = type
 
     override suspend fun getUrl(
             url: String,
@@ -32,9 +33,21 @@ class AnimeExtractors : ExtractorApi() {
     ) {
         val data = AppUtils.parseJson<EpisodeData>(url)
         val provider = AppUtils.parseJson<Provider>(referer ?: "")
-        val mainUrl = provider.domain
-        when (provider.name) {
-            "Aniwave" -> aniwaveExtractor(mainUrl, referer, data, subtitleCallback, callback)
+        when (type) {
+            Type.ANIME -> {
+                when (provider.name) {
+                    "Aniwave" -> {
+                        aniwaveExtractor(provider.domain, referer, data, subtitleCallback, callback)
+                    }
+                    else -> {}
+                }
+            }
+            Type.MEDIA ->
+                    when (provider.name) {
+                        "Cinezone" -> {}
+                        else -> {}
+                    }
+            else -> {}
         }
     }
 
@@ -54,10 +67,6 @@ class AnimeExtractors : ExtractorApi() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        Log.d(
-                "rowdy",
-                "$url/filter?keyword=${data.name}&year[]=${data.seasonYear?:""}&sort=most_relevance"
-        )
         val searchPage =
                 app.get(
                                 "$url/filter?keyword=${data.name}&year[]=${data.seasonYear?:""}&sort=most_relevance"
