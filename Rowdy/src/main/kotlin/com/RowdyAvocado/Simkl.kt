@@ -39,6 +39,7 @@ class Simkl(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
                     TvType.Movie,
                     mapper.writeValueAsString(EpisodeData(title, year, null, null))
             ) {
+                this.year = year
                 addId(this, id.toInt())
                 this.posterUrl = posterUrl
             }
@@ -59,7 +60,9 @@ class Simkl(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
                         }
                                 ?: throw Exception("Unable to build episodes")
             }
-            return newTvSeriesLoadResponse(name, url, TvType.TvSeries, episodes) {
+            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                this.year = year
+                addId(this, id.toInt())
                 this.posterUrl = posterUrl
             }
         }

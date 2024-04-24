@@ -1,7 +1,7 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-import android.util.Log
+
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
@@ -32,7 +32,6 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        Log.d("rowdy", "$url: $referer")
         val data = AppUtils.parseJson<EpisodeData>(url)
         val provider = AppUtils.parseJson<Provider>(referer ?: "")
         when (type) {
@@ -103,7 +102,7 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
                 app.get(episodeDataUrl).parsedSafe<ApiResponseHTML>()?.html
                         ?: throw Error("Could not fetch server data for $episodeDataUrl")
 
-        Jsoup.parse(episodeData).body().select(".servers .type").forEach {
+        Jsoup.parse(episodeData).body().select(".servers .type").amap {
             val dubType = it.attr("data-type")
             it.select("li").amap {
                 val serverId = it.attr("data-sv-id")
@@ -114,20 +113,14 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
                         serverRes?.result?.url
                                 ?: throw Error("Could not fetch server url for $serverResUrl")
                 val decUrl = AniwaveUtils.vrfDecrypt(encUrl)
-                val domain = "https://" + URI(decUrl).host
-                when (AniwaveUtils.serverName(serverId)) {
-                    "Vidplay" ->
-                            AnyVidplay(dubType, domain)
-                                    .getUrl(decUrl, referer, subtitleCallback, callback)
-                    "MyCloud" -> {}
-                    "Filemoon" ->
-                            AnyFilemoon(dubType, domain)
-                                    .getUrl(decUrl, referer, subtitleCallback, callback)
-                    "Mp4upload" ->
-                            AnyMp4Upload(dubType, domain)
-                                    .getUrl(decUrl, referer, subtitleCallback, callback)
-                    else -> {}
-                }
+                commonLinkLoader(
+                        CineZoneUtils.serverName(serverId),
+                        decUrl,
+                        dubType,
+                        referer,
+                        subtitleCallback,
+                        callback
+                )
             }
         }
     }
@@ -139,10 +132,6 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        Log.d(
-                "rowdy",
-                "$url/filter?keyword=${data.name}&year[]=${data.seasonYear?:""}&sort=most_relevance"
-        )
         val searchPage =
                 app.get(
                                 "$url/filter?keyword=${data.name}&year[]=${data.seasonYear?:""}&sort=most_relevance"
@@ -151,9 +140,7 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
         val id =
                 searchPage.selectFirst("div.tooltipBtn")?.attr("data-tip")?.split("?/")?.get(0)
                         ?: throw Error("Could not find media id from search page")
-        Log.d("rowdy", "$id")
         val seasonDataUrl = "$url/ajax/episode/list/$id?vrf=${CineZoneUtils.vrfEncrypt(id)}"
-        Log.d("rowdy", "$seasonDataUrl")
         val seasonData =
                 app.get(seasonDataUrl).parsedSafe<ApiResponseHTML>()?.html
                         ?: throw Error("Could not fetch data for $seasonDataUrl")
@@ -166,46 +153,57 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
                         ?.find { it.attr("data-num").equals(data.epNum ?: "1") }
                         ?.attr("data-id")
                         ?: throw Error("Could not find episode IDs in response")
-        Log.d("rowdy", "$episodeId")
         val episodeDataUrl =
                 "$url/ajax/server/list/$episodeId?vrf=${CineZoneUtils.vrfEncrypt(episodeId)}"
-        Log.d("rowdy", "$episodeDataUrl")
         val episodeData =
                 app.get(episodeDataUrl).parsedSafe<ApiResponseHTML>()?.html
                         ?: throw Error("Could not fetch server data for $episodeDataUrl")
 
-        Jsoup.parse(episodeData).body().select(".server").forEach {
+        Jsoup.parse(episodeData).body().select(".server").amap {
             val serverId = it.attr("data-id")
             val dataId = it.attr("data-link-id")
             val serverResUrl = "$url/ajax/server/$dataId?vrf=${CineZoneUtils.vrfEncrypt(dataId)}"
-            Log.d("rowdy", "$serverResUrl")
             val serverRes = app.get(serverResUrl).parsedSafe<AniwaveResponseServer>()
             val encUrl =
                     serverRes?.result?.url
                             ?: throw Error("Could not fetch server url for $serverResUrl")
             val decUrl = CineZoneUtils.vrfDecrypt(encUrl)
-            Log.d("rowdy", "$decUrl")
-            val domain = "https://" + URI(decUrl).host
-            Log.d("rowdy", "$domain")
-            when (CineZoneUtils.serverName(serverId)) {
-                "Vidplay" ->
-                        AnyVidplay(null, domain).getUrl(decUrl, referer, subtitleCallback, callback)
-                "MyCloud" -> {
-                    loadExtractor(decUrl, subtitleCallback, callback)
-                }
-                "Filemoon" ->
-                        AnyFilemoon(null, domain)
-                                .getUrl(decUrl, referer, subtitleCallback, callback)
-                "Mp4upload" ->
-                        AnyMp4Upload(null, domain)
-                                .getUrl(decUrl, referer, subtitleCallback, callback)
-                else -> {}
-            }
+            commonLinkLoader(
+                    CineZoneUtils.serverName(serverId),
+                    decUrl,
+                    null,
+                    referer,
+                    subtitleCallback,
+                    callback
+            )
         }
     }
 }
 
-class AnyFilemoon(dubType: String? = null, domain: String = "") : Filesim() {
+private suspend fun commonLinkLoader(
+        serverName: ServerName,
+        url: String,
+        dubStatus: String?,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+) {
+    val domain = "https://" + URI(url).host
+    when (serverName) {
+        ServerName.Vidplay ->
+                AnyVidplay(dubStatus, domain).getUrl(url, referer, subtitleCallback, callback)
+        ServerName.MyCloud -> loadExtractor(url, subtitleCallback, callback)
+        ServerName.Filemoon ->
+                AnyFileMoon(dubStatus, domain).getUrl(url, null, subtitleCallback, callback)
+        ServerName.Mp4upload ->
+                AnyMp4Upload(dubStatus, domain).getUrl(url, referer, subtitleCallback, callback)
+        else -> {
+            loadExtractor(url, subtitleCallback, callback)
+        }
+    }
+}
+
+class AnyFileMoon(dubType: String? = null, domain: String = "") : Filesim() {
     override val name = "Filemoon" + if (dubType != null) ": $dubType" else ""
     override val mainUrl = domain
     override val requiresReferer = false

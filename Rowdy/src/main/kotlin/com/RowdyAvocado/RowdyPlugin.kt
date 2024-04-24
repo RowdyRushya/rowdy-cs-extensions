@@ -84,13 +84,13 @@ class RowdyPlugin : Plugin() {
         if (isMediaSync)
                 when (mediaSyncService) {
                     "Simkl" -> registerMainAPI(Simkl(this))
+                    "Tmdb" -> registerMainAPI(Tmdb(this))
                 }
         if (isAnimeSync)
                 when (animeSyncService) {
                     "Anilist" -> registerMainAPI(Anilist(this))
                     "MyAnimeList" -> registerMainAPI(MyAnimeList(this))
                 }
-
         openSettings = {
             val frag = RowdySettings(this)
             frag.show(activity!!.supportFragmentManager, "")

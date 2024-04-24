@@ -188,7 +188,35 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
         // #region - building Media Sync Services List with its click listener
         val simklRadio = settings.findView<RadioButton>("simkl")
         simklRadio.background = plugin.resources!!.getDrawable(outlineId, null)
+        val tmdbRadio = settings.findView<RadioButton>("tmdb")
+        tmdbRadio.background = plugin.resources!!.getDrawable(outlineId, null)
+        val traktRadio = settings.findView<RadioButton>("trakt")
+        traktRadio.background = plugin.resources!!.getDrawable(outlineId, null)
         simklRadio.isChecked = plugin.mediaSyncService.equals("Simkl")
+        tmdbRadio.isChecked = plugin.mediaSyncService.equals("Tmdb")
+        traktRadio.isChecked = plugin.mediaSyncService.equals("Trakt")
+
+        simklRadio.setOnClickListener(
+                object : OnClickListener {
+                    override fun onClick(btn: View) {
+                        plugin.mediaSyncService = "Simkl"
+                    }
+                }
+        )
+        tmdbRadio.setOnClickListener(
+                object : OnClickListener {
+                    override fun onClick(btn: View) {
+                        plugin.mediaSyncService = "Tmdb"
+                    }
+                }
+        )
+        traktRadio.setOnClickListener(
+                object : OnClickListener {
+                    override fun onClick(btn: View) {
+                        plugin.mediaSyncService = "Trakt"
+                    }
+                }
+        )
         // #endregion - building Media Sync Services List with its click listener
 
         // #region - building Anime Sync Switch with its click listener

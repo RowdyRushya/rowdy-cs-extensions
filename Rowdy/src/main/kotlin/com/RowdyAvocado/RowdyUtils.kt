@@ -57,14 +57,14 @@ object AniwaveUtils {
         return vrf
     }
 
-    fun serverName(id: String): String {
+    fun serverName(id: String): ServerName {
         when (id) {
-            "41" -> return "Vidplay"
-            "28" -> return "MyCloud"
-            "44" -> return "Filemoon"
-            "35" -> return "Mp4upload"
+            "41" -> return ServerName.Vidplay
+            "28" -> return ServerName.MyCloud
+            "44" -> return ServerName.Filemoon
+            "35" -> return ServerName.Mp4upload
         }
-        return ""
+        return ServerName.NONE
     }
 }
 
@@ -117,16 +117,25 @@ object CineZoneUtils {
         return vrf
     }
 
-    fun serverName(id: String): String {
+    fun serverName(id: String): ServerName {
         when (id) {
-            "28" -> return "MyCloud"
-            "35" -> return "Mp4upload"
-            "40" -> return "streamtape"
-            "41" -> return "Vidplay"
-            "45" -> return "filemoon"
+            "28" -> return ServerName.MyCloud
+            "35" -> return ServerName.Mp4upload
+            "40" -> return ServerName.Streamtape
+            "41" -> return ServerName.Vidplay
+            "45" -> return ServerName.Filemoon
         }
-        return ""
+        return ServerName.NONE
     }
+}
+
+enum class ServerName {
+    MyCloud,
+    Mp4upload,
+    Streamtape,
+    Vidplay,
+    Filemoon,
+    NONE
 }
 
 data class Provider(
