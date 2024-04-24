@@ -85,6 +85,7 @@ class RowdyPlugin : Plugin() {
                 when (mediaSyncService) {
                     "Simkl" -> registerMainAPI(Simkl(this))
                     "Tmdb" -> registerMainAPI(Tmdb(this))
+                    "Trakt" -> registerMainAPI(Trakt(this))
                 }
         if (isAnimeSync)
                 when (animeSyncService) {
