@@ -23,7 +23,7 @@ class Anilist(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
     override val type = Type.ANIME
     override val api: SyncAPI = AniListApi(1)
 
-    // val addId2: (id: Int?): Unit = ::addAniListId
+    // val LoadResponse.addId2: (id: Int?): Unit -> Unit = ::addAniListId
 
     companion object {
         val name = "Anilist"
@@ -87,7 +87,7 @@ class Anilist(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
                     ) { this.posterUrl = it.coverImage.large }
                 }
                         ?: throw Exception("Unable to convert api response to search response")
-        return Pair(data, false)
+        return data to false
     }
 
     data class AnilistAPIResponse(

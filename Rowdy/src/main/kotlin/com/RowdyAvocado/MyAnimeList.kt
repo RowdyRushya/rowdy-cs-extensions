@@ -51,6 +51,6 @@ class MyAnimeList(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
         val url = request.data + page.minus(1).times(mediaLimit)
         val res = app.get(url).document
         val data = res.select("tr.ranking-list").map { elementToSearchRespose(it) }
-        return Pair(data, true)
+        return data to true
     }
 }

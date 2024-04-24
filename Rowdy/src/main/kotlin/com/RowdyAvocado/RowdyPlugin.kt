@@ -54,7 +54,7 @@ class RowdyPlugin : Plugin() {
 
     private val mediaPrdList =
             listOf(
-                    "CineZone" to "https://www.cinezone.to",
+                    "CineZone" to "https://cinezone.to",
                     "Superstream" to "https://www.superstream.to",
                     "VidSrcTo" to "https://www.vidsrc.to"
             )
@@ -149,8 +149,23 @@ class RowdyPlugin : Plugin() {
             return newProviderList
         } else {
             var data = emptyArray<Provider>()
-            providers.forEach { data += Provider(it.first, it.second, false, false) }
+            providers.forEach { data += Provider(it.first, it.second, true, false) }
             return data
         }
     }
 }
+
+// RowdyRushya — Today at 4:17 AM
+// i am totally aware of it and I will not register the MainAPI class in plugin if it the user is
+// not logged in
+// brother of yam — Today at 4:17 AM
+// no
+// like it is very wrong because it hardcodes the index
+// and on top of that it does not call init
+// use open val api: SyncApi get()= AccountManager.aniListApi
+// that should be better
+// RowdyRushya — Today at 4:18 AM
+// oh okay, thanks :Prayge~1: :Prayge~1:
+// brother of yam — Today at 4:18 AM
+// do remember that SyncApi throws
+// use SyncRepo for the safe API

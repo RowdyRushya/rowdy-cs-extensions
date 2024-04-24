@@ -35,7 +35,16 @@ open class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
             page: Int,
             request: MainPageRequest
     ): Pair<List<SearchResponse>, Boolean> {
-        return Pair(emptyList<SearchResponse>(), false)
+        return emptyList<SearchResponse>() to false
+    }
+
+    open fun addId(res: LoadResponse, id: Int) {
+        when {
+            this is Anilist -> res.addAniListId(id)
+            this is MyAnimeList -> res.addMalId(id)
+            this is Simkl -> res.addSimklId(id)
+            else -> {}
+        }
     }
 
     open override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
@@ -66,26 +75,17 @@ open class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
 
         data?.let {
             val epCount = data.nextAiring?.episode?.minus(1) ?: data.totalEpisodes ?: 0
-            for (i in 1..epCount) {
-                episodes +=
-                        newEpisode("") {
+            episodes =
+                    (1..epCount).map { i ->
+                        newEpisode(mapper.writeValueAsString(EpisodeData(data.title, year, 1, i))) {
                             this.season = 1
                             this.episode = i
-                            this.data =
-                                    mapper.writeValueAsString(
-                                            EpisodeData(data.title, year, this.season, i)
-                                    )
                         }
-            }
+                    }
         }
 
         return newAnimeLoadResponse(data?.title ?: "", url, TvType.Anime) {
-            when (name) {
-                "Anilist" -> addAniListId(id.toInt())
-                "MyAnimeList" -> addMalId(id.toInt())
-                "Simkl" -> addSimklId(id.toInt())
-                else -> {}
-            }
+            addId(this, id.toInt())
             addEpisodes(DubStatus.Subbed, episodes)
         }
     }
@@ -96,7 +96,9 @@ open class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        plugin.animeProviders.toList().amap {
+        val providers =
+                if (type.equals(Type.ANIME)) plugin.animeProviders else plugin.mediaProviders
+        providers.toList().amap {
             if (it.enabled) {
                 RowdyExtractor(type)
                         .getUrl(data, mapper.writeValueAsString(it), subtitleCallback, callback)
