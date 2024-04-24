@@ -2,22 +2,18 @@ package com.RowdyAvocado
 
 // import android.util.Log
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.Mp4Upload
+import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import java.net.URI
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
 import org.jsoup.Jsoup
 
 class RowdyExtractor(type: Type) : ExtractorApi() {
@@ -38,7 +34,14 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
             Type.ANIME -> {
                 when (provider.name) {
                     "Aniwave" -> {
-                        aniwaveExtractor(provider.domain, referer, data, subtitleCallback, callback)
+                        aniwaveExtractor(
+                                provider.name,
+                                provider.domain,
+                                referer,
+                                data,
+                                subtitleCallback,
+                                callback
+                        )
                     }
                     else -> {}
                 }
@@ -47,6 +50,7 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
                 when (provider.name) {
                     "CineZone" -> {
                         cinezoneExtractor(
+                                provider.name,
                                 provider.domain,
                                 referer,
                                 data,
@@ -71,6 +75,7 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
     }
 
     private suspend fun aniwaveExtractor(
+            providerName: String?,
             url: String?,
             referer: String?,
             data: EpisodeData,
@@ -93,7 +98,7 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
                 Jsoup.parse(seasonData)
                         .body()
                         .select(".episodes > ul > li > a")
-                        .find { it.attr("data-num").equals(data.epNum) }
+                        .find { it.attr("data-num").equals(data.epNum.toString()) }
                         ?.attr("data-ids")
                         ?: throw Error("Could not find episode IDs in response")
         val episodeDataUrl =
@@ -114,7 +119,8 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
                                 ?: throw Error("Could not fetch server url for $serverResUrl")
                 val decUrl = AniwaveUtils.vrfDecrypt(encUrl)
                 commonLinkLoader(
-                        CineZoneUtils.serverName(serverId),
+                        providerName,
+                        AniwaveUtils.serverName(serverId),
                         decUrl,
                         dubType,
                         referer,
@@ -126,6 +132,7 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
     }
 
     private suspend fun cinezoneExtractor(
+            providerName: String?,
             url: String?,
             referer: String?,
             data: EpisodeData,
@@ -148,9 +155,9 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
                 Jsoup.parse(seasonData)
                         .body()
                         .select(".episodes")
-                        .find { it.attr("data-season").equals(data.sNum ?: "1") }
+                        .find { it.attr("data-season").equals(data.sNum?.toString() ?: "1") }
                         ?.select("li a")
-                        ?.find { it.attr("data-num").equals(data.epNum ?: "1") }
+                        ?.find { it.attr("data-num").equals(data.epNum?.toString() ?: "1") }
                         ?.attr("data-id")
                         ?: throw Error("Could not find episode IDs in response")
         val episodeDataUrl =
@@ -169,6 +176,7 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
                             ?: throw Error("Could not fetch server url for $serverResUrl")
             val decUrl = CineZoneUtils.vrfDecrypt(encUrl)
             commonLinkLoader(
+                    providerName,
                     CineZoneUtils.serverName(serverId),
                     decUrl,
                     null,
@@ -181,6 +189,7 @@ class RowdyExtractor(type: Type) : ExtractorApi() {
 }
 
 private suspend fun commonLinkLoader(
+        providerName: String?,
         serverName: ServerName,
         url: String,
         dubStatus: String?,
@@ -191,112 +200,146 @@ private suspend fun commonLinkLoader(
     val domain = "https://" + URI(url).host
     when (serverName) {
         ServerName.Vidplay ->
-                AnyVidplay(dubStatus, domain).getUrl(url, referer, subtitleCallback, callback)
-        ServerName.MyCloud -> loadExtractor(url, subtitleCallback, callback)
+                AnyVidplay(providerName, dubStatus, domain)
+                        .getUrl(url, referer, subtitleCallback, callback)
+        ServerName.MyCloud ->
+                AnyMyCloud(providerName, dubStatus, domain)
+                        .getUrl(url, referer, subtitleCallback, callback)
         ServerName.Filemoon ->
-                AnyFileMoon(dubStatus, domain).getUrl(url, null, subtitleCallback, callback)
+                AnyFileMoon(providerName, dubStatus, domain)
+                        .getUrl(url, null, subtitleCallback, callback)
         ServerName.Mp4upload ->
-                AnyMp4Upload(dubStatus, domain).getUrl(url, referer, subtitleCallback, callback)
+                AnyMp4Upload(providerName, dubStatus, domain)
+                        .getUrl(url, referer, subtitleCallback, callback)
         else -> {
             loadExtractor(url, subtitleCallback, callback)
         }
     }
 }
 
-class AnyFileMoon(dubType: String? = null, domain: String = "") : Filesim() {
-    override val name = "Filemoon" + if (dubType != null) ": $dubType" else ""
+class AnyFileMoon(provider: String?, dubType: String?, domain: String = "") : Filesim() {
+    override val name =
+            (if (provider != null) "$provider: " else "") +
+                    "Filemoon" +
+                    (if (dubType != null) ": $dubType" else "")
     override val mainUrl = domain
     override val requiresReferer = false
 }
 
-class AnyVidplay(dubType: String? = null, domain: String = "") : ExtractorApi() {
-    override val name = "Vidplay" + if (dubType != null) ": $dubType" else ""
+// class AnyVidplay(provider: String?, dubType: String?, domain: String = "") : ExtractorApi() {
+//     override val name =
+//             (if (provider != null) "$provider: " else "") +
+//                     "Vidplay" +
+//                     (if (dubType != null) ": $dubType" else "")
+//     override val mainUrl = domain
+//     override val requiresReferer = false
+
+//     override suspend fun getUrl(
+//             url: String,
+//             referer: String?,
+//             subtitleCallback: (SubtitleFile) -> Unit,
+//             callback: (ExtractorLink) -> Unit
+//     ) {
+//         val id = url.substringBefore("?").substringAfterLast("/")
+//         val encodeId = encodeId(id, listOf("mpYdXXCWOdCmQxsx", "i0HTHEA9gTstnw1w"))
+//         val mediaUrl = callFutoken(encodeId, url)
+//         val res =
+//                 app.get(
+//                                 "$mediaUrl",
+//                                 headers =
+//                                         mapOf(
+//                                                 "Accept" to
+//                                                         "application/json, text/javascript, */*;
+// q=0.01",
+//                                                 "X-Requested-With" to "XMLHttpRequest",
+//                                         ),
+//                                 referer = url
+//                         )
+//                         .parsedSafe<Response>()
+//                         ?.result
+
+//         res?.sources?.map {
+//             M3u8Helper.generateM3u8(this.name, it.file ?: return@map,
+// "$mainUrl/").forEach(callback)
+//         }
+
+//         res?.tracks?.filter { it.kind == "captions" }?.map {
+//             subtitleCallback.invoke(SubtitleFile(it.label ?: return@map, it.file ?: return@map))
+//         }
+//     }
+
+//     private suspend fun callFutoken(id: String, url: String): String? {
+//         val script = app.get("$mainUrl/futoken", referer = url).text
+//         val k = "k='(\\S+)'".toRegex().find(script)?.groupValues?.get(1) ?: return null
+//         val a = mutableListOf(k)
+//         for (i in id.indices) {
+//             a.add((k[i % k.length].code + id[i].code).toString())
+//         }
+//         return "$mainUrl/mediainfo/${a.joinToString(",")}?${url.substringAfter("?")}"
+//     }
+
+//     private fun encodeId(id: String, keyList: List<String>): String {
+//         val cipher1 = Cipher.getInstance("RC4")
+//         val cipher2 = Cipher.getInstance("RC4")
+//         cipher1.init(
+//                 Cipher.DECRYPT_MODE,
+//                 SecretKeySpec(keyList[0].toByteArray(), "RC4"),
+//                 cipher1.parameters
+//         )
+//         cipher2.init(
+//                 Cipher.DECRYPT_MODE,
+//                 SecretKeySpec(keyList[1].toByteArray(), "RC4"),
+//                 cipher2.parameters
+//         )
+//         var input = id.toByteArray()
+//         input = cipher1.doFinal(input)
+//         input = cipher2.doFinal(input)
+//         return base64Encode(input).replace("/", "_")
+//     }
+
+//     data class Tracks(
+//             @JsonProperty("file") val file: String? = null,
+//             @JsonProperty("label") val label: String? = null,
+//             @JsonProperty("kind") val kind: String? = null,
+//     )
+
+//     data class Sources(
+//             @JsonProperty("file") val file: String? = null,
+//     )
+
+//     data class Result(
+//             @JsonProperty("sources") val sources: ArrayList<Sources>? = arrayListOf(),
+//             @JsonProperty("tracks") val tracks: ArrayList<Tracks>? = arrayListOf(),
+//     )
+
+//     data class Response(
+//             @JsonProperty("result") val result: Result? = null,
+//     )
+// }
+
+class AnyMyCloud(provider: String?, dubType: String?, domain: String = "") : Vidplay() {
+    override val name =
+            (if (provider != null) "$provider: " else "") +
+                    "MyCloud" +
+                    (if (dubType != null) ": $dubType" else "")
     override val mainUrl = domain
     override val requiresReferer = false
-
-    override suspend fun getUrl(
-            url: String,
-            referer: String?,
-            subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
-    ) {
-        val id = url.substringBefore("?").substringAfterLast("/")
-        val encodeId = encodeId(id, listOf("mpYdXXCWOdCmQxsx", "i0HTHEA9gTstnw1w"))
-        val mediaUrl = callFutoken(encodeId, url)
-        val res =
-                app.get(
-                                "$mediaUrl",
-                                headers =
-                                        mapOf(
-                                                "Accept" to
-                                                        "application/json, text/javascript, */*; q=0.01",
-                                                "X-Requested-With" to "XMLHttpRequest",
-                                        ),
-                                referer = url
-                        )
-                        .parsedSafe<Response>()
-                        ?.result
-
-        res?.sources?.map {
-            M3u8Helper.generateM3u8(this.name, it.file ?: return@map, "$mainUrl/").forEach(callback)
-        }
-
-        res?.tracks?.filter { it.kind == "captions" }?.map {
-            subtitleCallback.invoke(SubtitleFile(it.label ?: return@map, it.file ?: return@map))
-        }
-    }
-
-    private suspend fun callFutoken(id: String, url: String): String? {
-        val script = app.get("$mainUrl/futoken", referer = url).text
-        val k = "k='(\\S+)'".toRegex().find(script)?.groupValues?.get(1) ?: return null
-        val a = mutableListOf(k)
-        for (i in id.indices) {
-            a.add((k[i % k.length].code + id[i].code).toString())
-        }
-        return "$mainUrl/mediainfo/${a.joinToString(",")}?${url.substringAfter("?")}"
-    }
-
-    private fun encodeId(id: String, keyList: List<String>): String {
-        val cipher1 = Cipher.getInstance("RC4")
-        val cipher2 = Cipher.getInstance("RC4")
-        cipher1.init(
-                Cipher.DECRYPT_MODE,
-                SecretKeySpec(keyList[0].toByteArray(), "RC4"),
-                cipher1.parameters
-        )
-        cipher2.init(
-                Cipher.DECRYPT_MODE,
-                SecretKeySpec(keyList[1].toByteArray(), "RC4"),
-                cipher2.parameters
-        )
-        var input = id.toByteArray()
-        input = cipher1.doFinal(input)
-        input = cipher2.doFinal(input)
-        return base64Encode(input).replace("/", "_")
-    }
-
-    data class Tracks(
-            @JsonProperty("file") val file: String? = null,
-            @JsonProperty("label") val label: String? = null,
-            @JsonProperty("kind") val kind: String? = null,
-    )
-
-    data class Sources(
-            @JsonProperty("file") val file: String? = null,
-    )
-
-    data class Result(
-            @JsonProperty("sources") val sources: ArrayList<Sources>? = arrayListOf(),
-            @JsonProperty("tracks") val tracks: ArrayList<Tracks>? = arrayListOf(),
-    )
-
-    data class Response(
-            @JsonProperty("result") val result: Result? = null,
-    )
 }
 
-class AnyMp4Upload(dubType: String? = null, domain: String = "") : Mp4Upload() {
-    override var name = "Mp4Upload" + if (dubType != null) ": $dubType" else ""
+class AnyVidplay(provider: String?, dubType: String?, domain: String = "") : Vidplay() {
+    override val name =
+            (if (provider != null) "$provider: " else "") +
+                    "Vidplay" +
+                    (if (dubType != null) ": $dubType" else "")
+    override val mainUrl = domain
+    override val requiresReferer = false
+}
+
+class AnyMp4Upload(provider: String?, dubType: String?, domain: String = "") : Mp4Upload() {
+    override var name =
+            (if (provider != null) "$provider: " else "") +
+                    "Mp4Upload" +
+                    (if (dubType != null) ": $dubType" else "")
     override var mainUrl = domain
     override val requiresReferer = false
 }
