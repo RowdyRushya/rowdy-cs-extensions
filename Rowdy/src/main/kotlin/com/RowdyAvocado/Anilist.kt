@@ -13,8 +13,8 @@ import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.Media
 import com.lagradost.cloudstream3.utils.*
 
 class Anilist(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
-    override var name = Companion.name
-    override var mainUrl = Companion.mainUrl
+    override var name = "Anilist"
+    override var mainUrl = "https://anilist.co"
     override var supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
     override var lang = "en"
     override val supportedSyncNames = setOf(SyncIdName.Anilist)
@@ -22,84 +22,58 @@ class Anilist(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
     override val hasQuickSearch = false
     override val type = Type.ANIME
     override val api: SyncAPI = AniListApi(1)
-
-    // val LoadResponse.addId2: (id: Int?): Unit -> Unit = ::addAniListId
-
-    companion object {
-        val name = "Anilist"
-        var mainUrl = "https://anilist.co"
-        val apiUrl = "https://graphql.anilist.co"
-    }
+    private val apiUrl = "https://graphql.anilist.co"
+    private val headerJSON =
+            mapOf("Accept" to "application/json", "Content-Type" to "application/json")
 
     override val mainPage =
             mainPageOf(
-                    "Trending Now" to "Trending Now",
-                    "Popular This Season" to "Popular This Season",
-                    "All Time Popular" to "All Time Popular",
-                    "Top 100 Anime" to "Top 100 Anime",
+                    "query (\$page: Int = ###, \$sort: [MediaSort] = [TRENDING_DESC, POPULARITY_DESC], \$isAdult: Boolean = false) { Page(page: \$page, perPage: 20) { pageInfo { total perPage currentPage lastPage hasNextPage } media(sort: \$sort, isAdult: \$isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }" to
+                            "Trending Now",
+                    "query (\$page: Int = ###, \$seasonYear: Int = 2024, \$sort: [MediaSort] = [TRENDING_DESC, POPULARITY_DESC], \$isAdult: Boolean = false) { Page(page: \$page, perPage: 20) { pageInfo { total perPage currentPage lastPage hasNextPage } media(sort: \$sort, seasonYear: \$seasonYear, season: SPRING, isAdult: \$isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }" to
+                            "Popular This Season",
+                    "query (\$page: Int = ###, \$sort: [MediaSort] = [POPULARITY_DESC], \$isAdult: Boolean = false) { Page(page: \$page, perPage: 20) { pageInfo { total perPage currentPage lastPage hasNextPage } media(sort: \$sort, isAdult: \$isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }" to
+                            "All Time Popular",
+                    "query (\$page: Int = ###, \$sort: [MediaSort] = [SCORE_DESC], \$isAdult: Boolean = false) { Page(page: \$page, perPage: 20) { pageInfo { total perPage currentPage lastPage hasNextPage } media(sort: \$sort, isAdult: \$isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }" to
+                            "Top 100 Anime",
                     "Personal" to "Personal"
             )
 
-    private fun queries(section: String, page: Int): String {
-        return when (section) {
-            "Trending Now" ->
-                    "query (\$page: Int = $page, \$sort: [MediaSort] = [TRENDING_DESC, POPULARITY_DESC], \$isAdult: Boolean = false) { Page(page: \$page, perPage: 20) { pageInfo { total perPage currentPage lastPage hasNextPage } media(sort: \$sort, isAdult: \$isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }"
-            "Popular This Season" ->
-                    "query (\$page: Int = $page, \$seasonYear: Int = 2024, \$sort: [MediaSort] = [TRENDING_DESC, POPULARITY_DESC], \$isAdult: Boolean = false) { Page(page: \$page, perPage: 20) { pageInfo { total perPage currentPage lastPage hasNextPage } media(sort: \$sort, seasonYear: \$seasonYear, season: SPRING, isAdult: \$isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }"
-            "All Time Popular" ->
-                    "query (\$page: Int = $page, \$sort: [MediaSort] = [POPULARITY_DESC], \$isAdult: Boolean = false) { Page(page: \$page, perPage: 20) { pageInfo { total perPage currentPage lastPage hasNextPage } media(sort: \$sort, isAdult: \$isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }"
-            "Top 100 Anime" ->
-                    "query (\$page: Int = $page, \$sort: [MediaSort] = [SCORE_DESC], \$isAdult: Boolean = false) { Page(page: \$page, perPage: 20) { pageInfo { total perPage currentPage lastPage hasNextPage } media(sort: \$sort, isAdult: \$isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }"
-            else -> ""
-        }
-    }
-
-    private suspend fun anilistAPICall(query: String): AnilistData? {
-        val url = Companion.apiUrl
+    private suspend fun anilistAPICall(query: String): AnilistData {
+        val data = mapOf("query" to query)
         val res =
-                app.post(
-                        url,
-                        headers =
-                                mapOf(
-                                        "Accept" to "application/json",
-                                        "Content-Type" to "application/json",
-                                ),
-                        data =
-                                mapOf(
-                                        "query" to query,
-                                )
-                )
-        val parsed = res.parsedSafe<AnilistAPIResponse>()
-        return parsed?.data
+                app.post(apiUrl, headers = headerJSON, data = data).parsedSafe<AnilistAPIResponse>()
+                        ?: throw Exception("Unable to fecth or parse Anilist api response")
+        return res.data
     }
 
     override suspend fun buildSearchResposeList(
             page: Int,
             request: MainPageRequest
     ): Pair<List<SearchResponse>, Boolean> {
-        val res = anilistAPICall(queries(request.data, page))
+        val res = anilistAPICall(request.data.replace("###", "$page"))
         val data =
-                res?.page?.media?.map {
-                    newAnimeSearchResponse(
-                            it.title.english ?: "",
-                            "https://anilist.co/anime/${it.id}",
-                            TvType.Anime
-                    ) { this.posterUrl = it.coverImage.large }
+                res.page.media.map {
+                    val title = it.title.english ?: it.title.romaji ?: ""
+                    val url = "$mainUrl/anime/${it.id}"
+                    newAnimeSearchResponse(title, url, TvType.Anime) {
+                        this.posterUrl = it.coverImage.large
+                    }
                 }
-                        ?: throw Exception("Unable to convert api response to search response")
-        return data to false
+        val hasNextPage = res.page.pageInfo.hasNextPage ?: false
+        return data to hasNextPage
     }
 
     data class AnilistAPIResponse(
-            @JsonProperty("data") val data: AnilistData? = null,
+            @JsonProperty("data") val data: AnilistData,
     )
 
     data class AnilistData(
-            @JsonProperty("Page") val page: AnilistPage? = null,
+            @JsonProperty("Page") val page: AnilistPage,
     )
 
     data class AnilistPage(
-            @JsonProperty("pageInfo") val pageInfo: LikePageInfo? = null,
-            @JsonProperty("media") val media: List<Media>? = null,
+            @JsonProperty("pageInfo") val pageInfo: LikePageInfo,
+            @JsonProperty("media") val media: List<Media>,
     )
 }

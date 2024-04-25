@@ -16,11 +16,10 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import java.net.URI
 import org.jsoup.Jsoup
 
-class RowdyExtractor(type: Type) : ExtractorApi() {
-    override val mainUrl = Anilist.mainUrl
-    override val name = Anilist.name
+class RowdyExtractor(val type: Type) : ExtractorApi() {
+    override val mainUrl = "https://rowdy.to"
+    override val name = "Rowdy Extractor"
     override val requiresReferer = false
-    private val type = type
 
     override suspend fun getUrl(
             url: String,
@@ -226,6 +225,39 @@ class AnyFileMoon(provider: String?, dubType: String?, domain: String = "") : Fi
     override val requiresReferer = false
 }
 
+class AnyMyCloud(provider: String?, dubType: String?, domain: String = "") : Vidplay() {
+    override val name =
+            (if (provider != null) "$provider: " else "") +
+                    "MyCloud" +
+                    (if (dubType != null) ": $dubType" else "")
+    override val mainUrl = domain
+    override val requiresReferer = false
+}
+
+class AnyVidplay(provider: String?, dubType: String?, domain: String = "") : Vidplay() {
+    override val name =
+            (if (provider != null) "$provider: " else "") +
+                    "Vidplay" +
+                    (if (dubType != null) ": $dubType" else "")
+    override val mainUrl = domain
+    override val requiresReferer = false
+}
+
+class AnyMp4Upload(provider: String?, dubType: String?, domain: String = "") : Mp4Upload() {
+    override var name =
+            (if (provider != null) "$provider: " else "") +
+                    "Mp4Upload" +
+                    (if (dubType != null) ": $dubType" else "")
+    override var mainUrl = domain
+    override val requiresReferer = false
+}
+
+class StreamWish : Filesim() {
+    override val name = "StreamWish"
+    override val mainUrl = "https://awish.pro"
+    override val requiresReferer = false
+}
+
 // class AnyVidplay(provider: String?, dubType: String?, domain: String = "") : ExtractorApi() {
 //     override val name =
 //             (if (provider != null) "$provider: " else "") +
@@ -316,36 +348,3 @@ class AnyFileMoon(provider: String?, dubType: String?, domain: String = "") : Fi
 //             @JsonProperty("result") val result: Result? = null,
 //     )
 // }
-
-class AnyMyCloud(provider: String?, dubType: String?, domain: String = "") : Vidplay() {
-    override val name =
-            (if (provider != null) "$provider: " else "") +
-                    "MyCloud" +
-                    (if (dubType != null) ": $dubType" else "")
-    override val mainUrl = domain
-    override val requiresReferer = false
-}
-
-class AnyVidplay(provider: String?, dubType: String?, domain: String = "") : Vidplay() {
-    override val name =
-            (if (provider != null) "$provider: " else "") +
-                    "Vidplay" +
-                    (if (dubType != null) ": $dubType" else "")
-    override val mainUrl = domain
-    override val requiresReferer = false
-}
-
-class AnyMp4Upload(provider: String?, dubType: String?, domain: String = "") : Mp4Upload() {
-    override var name =
-            (if (provider != null) "$provider: " else "") +
-                    "Mp4Upload" +
-                    (if (dubType != null) ": $dubType" else "")
-    override var mainUrl = domain
-    override val requiresReferer = false
-}
-
-class StreamWish : Filesim() {
-    override val name = "StreamWish"
-    override val mainUrl = "https://awish.pro"
-    override val requiresReferer = false
-}
