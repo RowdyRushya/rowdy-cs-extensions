@@ -41,6 +41,10 @@ open class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
         }
     }
 
+    override suspend fun search(query: String): List<SearchResponse>? {
+        return api.search(query)
+    }
+
     open override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         if (request.name.equals("Personal")) {
             var homePageList =
