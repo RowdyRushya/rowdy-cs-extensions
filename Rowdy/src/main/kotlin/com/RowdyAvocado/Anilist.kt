@@ -47,19 +47,18 @@ class Anilist(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
         return res.data
     }
 
-    override suspend fun buildSearchResposeList(
-            page: Int,
-            request: MainPageRequest
+    private fun AniListApi.Media.toSearchResponse(): SearchResponse {
+        val title = this.title.english ?: this.title.romaji ?: ""
+        val url = "$mainUrl/anime/${this.id}"
+        val posterUrl = this.coverImage.large
+        return newAnimeSearchResponse(title, url, TvType.Anime) { this.posterUrl = posterUrl }
+    }
+
+    override suspend fun MainPageRequest.toSearchResponseList(
+            page: Int
     ): Pair<List<SearchResponse>, Boolean> {
-        val res = anilistAPICall(request.data.replace("###", "$page"))
-        val data =
-                res.page.media.map {
-                    val title = it.title.english ?: it.title.romaji ?: ""
-                    val url = "$mainUrl/anime/${it.id}"
-                    newAnimeSearchResponse(title, url, TvType.Anime) {
-                        this.posterUrl = it.coverImage.large
-                    }
-                }
+        val res = anilistAPICall(this.data.replace("###", "$page"))
+        val data = res.page.media.map { it.toSearchResponse() }
         val hasNextPage = res.page.pageInfo.hasNextPage ?: false
         return data to hasNextPage
     }

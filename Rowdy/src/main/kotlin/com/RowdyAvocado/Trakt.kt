@@ -4,8 +4,8 @@ package com.RowdyAvocado
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.metaproviders.TraktProvider.LinkData
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
+import com.lagradost.cloudstream3.metaproviders.TraktProvider.LinkData
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
 
@@ -18,7 +18,10 @@ class Trakt(val plugin: RowdyPlugin) : TraktProvider() {
     override val supportedSyncNames = setOf(SyncIdName.Simkl)
     override val hasMainPage = true
     override val hasQuickSearch = false
-    // override val useMetaLoadResponse = true
+
+    protected fun Any.toStringData(): String {
+        return mapper.writeValueAsString(this)
+    }
 
     companion object {
         val name = "Trakt"
@@ -36,19 +39,11 @@ class Trakt(val plugin: RowdyPlugin) : TraktProvider() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val mediaData = AppUtils.parseJson<LinkData>(data).toEpisodeData()
+        val mediaData = AppUtils.parseJson<LinkData>(data).toEpisodeData().toStringData()
         val providers =
                 if (type.equals(Type.ANIME)) plugin.animeProviders else plugin.mediaProviders
-        providers.toList().amap {
-            if (it.enabled) {
-                RowdyExtractor(type)
-                        .getUrl(
-                                mapper.writeValueAsString(mediaData),
-                                mapper.writeValueAsString(it),
-                                subtitleCallback,
-                                callback
-                        )
-            }
+        providers.toList().filter { it.enabled }.amap {
+            RowdyExtractor(type).getUrl(mediaData, it.toStringData(), subtitleCallback, callback)
         }
         return true
     }

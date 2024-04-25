@@ -11,8 +11,8 @@ import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 
 class MyAnimeList(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
-    override var name = Companion.name
-    override var mainUrl = Companion.mainUrl
+    override var name = "MyAnimeList"
+    override var mainUrl = "https://myanimelist.net"
     override var supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
     override var lang = "en"
     override val supportedSyncNames = setOf(SyncIdName.Anilist)
@@ -21,12 +21,7 @@ class MyAnimeList(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
     override val api: SyncAPI = MALApi(1)
     override val type = Type.ANIME
     private final val mediaLimit = 50
-
-    companion object {
-        val name = "MyAnimeList"
-        var mainUrl = "https://myanimelist.net"
-        val apiUrl = "https://api.myanimelist.net/v2"
-    }
+    private val apiUrl = "https://api.myanimelist.net/v2"
 
     override val mainPage =
             mainPageOf(
@@ -36,21 +31,20 @@ class MyAnimeList(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
                     "Personal" to "Personal"
             )
 
-    private fun elementToSearchRespose(item: Element): SearchResponse {
-        val name = item.select("div.detail a.hoverinfo_trigger").text()
-        val url =
-                item.select("div.detail a.hoverinfo_trigger").attr("href").substringBeforeLast("/")
-        val posterUrl = item.select("img").attr("data-src")
+    private fun Element.toSearchResponse(): SearchResponse {
+        val data = this.select("div.detail a.hoverinfo_trigger")
+        val name = data.text()
+        val url = data.attr("href").substringBeforeLast("/")
+        val posterUrl = this.select("img").attr("data-src")
         return newAnimeSearchResponse(name, url, TvType.Anime) { this.posterUrl = posterUrl }
     }
 
-    override suspend fun buildSearchResposeList(
-            page: Int,
-            request: MainPageRequest
+    override suspend fun MainPageRequest.toSearchResponseList(
+            page: Int
     ): Pair<List<SearchResponse>, Boolean> {
-        val url = request.data + page.minus(1).times(mediaLimit)
+        val url = this.data + page.minus(1).times(mediaLimit)
         val res = app.get(url).document
-        val data = res.select("tr.ranking-list").map { elementToSearchRespose(it) }
+        val data = res.select("tr.ranking-list").map { it.toSearchResponse() }
         return data to true
     }
 }
