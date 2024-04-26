@@ -1,7 +1,7 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-
+import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
@@ -52,6 +52,9 @@ open class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
     }
 
     open override suspend fun load(url: String): LoadResponse {
+        Log.d("rowdy", "${api.loginInfo()?.accountIndex}")
+        Log.d("rowdy", "${api.loginInfo()?.name}")
+        Log.d("rowdy", "${api.loginInfo()?.profilePicture}")
         val id = url.removeSuffix("/").substringAfterLast("/")
         val data: SyncAPI.SyncResult =
                 api.getResult(id) ?: throw NotImplementedError("Unable to fetch show details")
