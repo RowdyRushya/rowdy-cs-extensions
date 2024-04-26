@@ -4,21 +4,13 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 }
 // use an integer for version numbers
-version = 8
-
+version = 9
 
 cloudstream {
-    
     description = "One stop solution for all of your media need."
     authors = listOf("RowdyRushya")
 
-    /**
-    * Status int as the following:
-    * 0: Down
-    * 1: Ok
-    * 2: Slow
-    * 3: Beta only
-    * */
+    /** Status int as the following: 0: Down 1: Ok 2: Slow 3: Beta only */
     status = 1
 
     tvTypes = listOf("All")
@@ -26,13 +18,12 @@ cloudstream {
     requiresResources = true
     language = "en"
 
-    iconUrl = "https://raw.githubusercontent.com/Rowdy-Avocado/Rowdycado-Extensions/master/logos/ultima.png"
+    iconUrl =
+            "https://raw.githubusercontent.com/Rowdy-Avocado/Rowdycado-Extensions/master/logos/ultima.png"
 }
 
 android {
-    buildFeatures {
-        viewBinding = true
-    }
+    buildFeatures { viewBinding = true }
 
     defaultConfig {
         minSdk = 26

@@ -63,7 +63,7 @@ open class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
                     Episode(dataUrl, season = 1, episode = i)
                 }
         return newAnimeLoadResponse(data.title ?: "", url, TvType.Anime) {
-            // this.syncData = mutableMapOf(id to syncId)
+            this.syncData = mutableMapOf(syncId to id)
             addEpisodes(DubStatus.Subbed, episodes)
             this.recommendations = data.recommendations
         }
