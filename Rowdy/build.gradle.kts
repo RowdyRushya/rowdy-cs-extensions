@@ -4,7 +4,7 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 }
 // use an integer for version numbers
-version = 9
+version = 10
 
 cloudstream {
     description = "One stop solution for all of your media need."
@@ -13,7 +13,7 @@ cloudstream {
     /** Status int as the following: 0: Down 1: Ok 2: Slow 3: Beta only */
     status = 1
 
-    tvTypes = listOf("All")
+    tvTypes = listOf("Movie", "TvSeries", "Anime")
 
     requiresResources = true
     language = "en"
