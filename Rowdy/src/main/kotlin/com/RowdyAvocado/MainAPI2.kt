@@ -4,9 +4,6 @@ package com.RowdyAvocado
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse
-import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
@@ -19,6 +16,7 @@ open class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
     open override val hasMainPage = true
     open val api: SyncAPI = AniListApi(1)
     open val type = Type.NONE
+    open val syncId = ""
 
     protected fun Any.toStringData(): String {
         return mapper.writeValueAsString(this)
@@ -32,15 +30,6 @@ open class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
         return emptyList<SearchResponse>() to false
     }
 
-    protected fun addId(res: LoadResponse, id: Int) {
-        when {
-            this is Anilist -> res.addAniListId(id)
-            this is MyAnimeList -> res.addMalId(id)
-            this is Simkl -> res.addSimklId(id)
-            else -> {}
-        }
-    }
-
     override suspend fun search(query: String): List<SearchResponse>? {
         return api.search(query)
     }
@@ -48,9 +37,10 @@ open class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
     open override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         if (request.name.equals("Personal")) {
             var homePageList =
-                    api.getPersonalLibrary()?.allLibraryLists?.map {
-                        if (it.items.isEmpty()) return null
-                        val libraryName = it.name.asString(plugin.activity ?: return null)
+                    api.getPersonalLibrary()?.allLibraryLists?.mapNotNull {
+                        if (it.items.isEmpty()) return@mapNotNull null
+                        val libraryName =
+                                it.name.asString(plugin.activity ?: return@mapNotNull null)
                         HomePageList("${request.name}: $libraryName", it.items)
                     }
                             ?: return null
@@ -73,8 +63,9 @@ open class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
                     Episode(dataUrl, season = 1, episode = i)
                 }
         return newAnimeLoadResponse(data.title ?: "", url, TvType.Anime) {
-            addId(this, id.toInt())
+            // this.syncData = mutableMapOf(id to syncId)
             addEpisodes(DubStatus.Subbed, episodes)
+            this.recommendations = data.recommendations
         }
     }
 

@@ -149,7 +149,16 @@ data class EpisodeData(
         @JsonProperty("name") var name: String? = null,
         @JsonProperty("seasonYear") var seasonYear: Int? = null,
         @JsonProperty("sNum") var sNum: Int? = null,
-        @JsonProperty("epNum") var epNum: Int? = null
+        @JsonProperty("epNum") var epNum: Int? = null,
+        @JsonProperty("ids") var ids: Ids? = null,
+)
+
+data class Ids(
+        @JsonProperty("simkl") val simkl: Int? = null,
+        @JsonProperty("imdb") val imdb: String? = null,
+        @JsonProperty("tmdb") val tmdb: String? = null,
+        @JsonProperty("mal") val mal: String? = null,
+        @JsonProperty("anilist") val anilist: String? = null,
 )
 
 data class ApiResponseHTML(

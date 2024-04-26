@@ -22,6 +22,7 @@ class Anilist(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
     override val hasQuickSearch = false
     override val type = Type.ANIME
     override val api: SyncAPI = AniListApi(1)
+    override val syncId = "Anilist"
     private val apiUrl = "https://graphql.anilist.co"
     private val headerJSON =
             mapOf("Accept" to "application/json", "Content-Type" to "application/json")

@@ -3,6 +3,7 @@ package com.RowdyAvocado
 // import android.util.Log
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi
@@ -20,6 +21,7 @@ class Simkl(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
     override val hasQuickSearch = false
     override val type = Type.MEDIA
     override val api: SimklApi = SimklApi(1)
+    override val syncId = "simkl"
     private val apiUrl = "https://api.simkl.com"
 
     private fun EpisodeMetadata.toEpisode(title: String, year: Int?): Episode {
@@ -30,10 +32,12 @@ class Simkl(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
         }
     }
 
+    override val mainPage = mainPageOf("""{ "wltime": "month", "sort": ["watched", true], "langs": "EN", "boxes": { "subtype": { "t_documentary": false, "t_youtube": false, "t_entertainment": false } }, "sliders": {"budget":[1,500]}, "limit": 50, "title_lang": 0, "type": "movies", "section": "best", "page": 2 }""" to "Most Watched Movies" ,"" to "Most Watched TV" ,"Personal" to "Personal")
+
     override suspend fun load(url: String): LoadResponse {
-        val id = url.removeSuffix("/").substringAfterLast("/").toInt()
+        val id = url.removeSuffix("/").substringAfterLast("/")
         val data =
-                api.searchByIds(mapOf(SyncServices.Simkl to id.toString()))?.getOrNull(0)
+                api.searchByIds(mapOf(SyncServices.Simkl to id))?.getOrNull(0)
                         ?: throw ErrorLoadingException("Unable to load data")
         val title = data.title ?: throw ErrorLoadingException("Unable to find title")
         val year = data.year
@@ -41,18 +45,19 @@ class Simkl(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
         return if (data.type.equals("movie")) {
             val dataUrl = EpisodeData(title, year, null, null).toStringData()
             newMovieLoadResponse(title, url, TvType.Movie, dataUrl) {
+                this.syncData = mutableMapOf(id to syncId)
                 this.year = year
-                addId(this, id.toInt())
                 this.posterUrl = posterUrl
             }
         } else {
             val epData =
-                    SimklApi.getEpisodes(id, data.type, data.total_episodes, false)
+                    SimklApi.getEpisodes(id.toInt(), data.type, data.total_episodes, false)
                             ?: throw Exception("Unable to fetch episodes")
             val episodes = epData.map { it.toEpisode(title, year) }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                // this.syncData = mutableMapOf(id to syncId)
                 this.year = year
-                addId(this, id)
+                addSimklId(id.toInt())
                 this.posterUrl = posterUrl
             }
         }

@@ -20,6 +20,7 @@ class MyAnimeList(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
     override val hasQuickSearch = false
     override val api: SyncAPI = MALApi(1)
     override val type = Type.ANIME
+    override val syncId = "MAL"
     private final val mediaLimit = 50
     private val apiUrl = "https://api.myanimelist.net/v2"
 
