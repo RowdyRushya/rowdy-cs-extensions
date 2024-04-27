@@ -21,3 +21,18 @@ cloudstream {
     iconUrl =
             "https://raw.githubusercontent.com/Rowdy-Avocado/Rowdycado-Extensions/master/logos/ultima.png"
 }
+
+android {
+    buildFeatures { viewBinding = true }
+
+    defaultConfig {
+        minSdk = 26
+        compileSdkVersion(33)
+        targetSdk = 33
+    }
+    
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
