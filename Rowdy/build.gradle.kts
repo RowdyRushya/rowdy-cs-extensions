@@ -4,7 +4,7 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 }
 // use an integer for version numbers
-version = 11
+version = 12
 
 cloudstream {
     description = "One stop solution for all of your media need."
@@ -26,11 +26,11 @@ android {
     buildFeatures { viewBinding = true }
 
     defaultConfig {
-        minSdk = 21
+        minSdk = 26
         compileSdkVersion(33)
         targetSdk = 33
     }
-    
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8

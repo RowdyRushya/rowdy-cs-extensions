@@ -155,6 +155,7 @@ data class EpisodeData(
 
 data class Ids(
         @JsonProperty("simkl") val simkl: Int? = null,
+        @JsonProperty("simkl_id") val simkl2: Int? = null,
         @JsonProperty("imdb") val imdb: String? = null,
         @JsonProperty("tmdb") val tmdb: String? = null,
         @JsonProperty("mal") val mal: String? = null,

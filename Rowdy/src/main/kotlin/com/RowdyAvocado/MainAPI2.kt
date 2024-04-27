@@ -8,15 +8,15 @@ import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.syncproviders.SyncAPI
-import com.lagradost.cloudstream3.syncproviders.providers.AniListApi
 import com.lagradost.cloudstream3.utils.*
 
-open class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
+abstract class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
     open override var lang = "en"
     open override val hasMainPage = true
-    open val api: SyncAPI = AniListApi(1)
-    open val type = Type.NONE
-    open val syncId = ""
+    abstract val api: SyncAPI
+    abstract val type: Type
+    abstract val syncId: String
+    abstract val loginRequired: Boolean
 
     protected fun Any.toStringData(): String {
         return mapper.writeValueAsString(this)
@@ -53,8 +53,7 @@ open class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
 
     open override suspend fun load(url: String): LoadResponse {
         val id = url.removeSuffix("/").substringAfterLast("/")
-        val data: SyncAPI.SyncResult =
-                api.getResult(id) ?: throw NotImplementedError("Unable to fetch show details")
+        val data = api.getResult(id) ?: throw NotImplementedError("Unable to fetch show details")
         var year = data.startDate?.div(1000)?.div(86400)?.div(365)?.plus(1970)?.toInt()
         val epCount = data.nextAiring?.episode?.minus(1) ?: data.totalEpisodes ?: 0
         val episodes =

@@ -5,7 +5,7 @@ package com.RowdyAvocado
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.syncproviders.SyncAPI
+import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.LikePageInfo
@@ -21,8 +21,9 @@ class Anilist(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
     override val hasMainPage = true
     override val hasQuickSearch = false
     override val type = Type.ANIME
-    override val api: SyncAPI = AniListApi(1)
+    override val api = AccountManager.aniListApi
     override val syncId = "Anilist"
+    override val loginRequired = false
     private val apiUrl = "https://graphql.anilist.co"
     private val headerJSON =
             mapOf("Accept" to "application/json", "Content-Type" to "application/json")
