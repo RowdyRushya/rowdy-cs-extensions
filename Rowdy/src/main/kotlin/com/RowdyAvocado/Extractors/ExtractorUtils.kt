@@ -2,24 +2,47 @@ package com.RowdyAvocado
 
 import android.util.Base64
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.app
+import java.net.URI
 import java.net.URLDecoder
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 
+enum class ServerName {
+    MyCloud,
+    Mp4upload,
+    Streamtape,
+    Vidplay,
+    Filemoon,
+    NONE
+}
+
 object RowdyExtractorUtil {
+
     val mediaPrdList =
             listOf(
                     "CineZone" to "https://cinezone.to",
                     "VidsrcNet" to "https://vidsrc.net",
                     "VidsrcTo" to "https://vidsrc.to",
+                    "Moflix" to "https://moflix-stream.xyz",
             )
 
     val animePrdList =
             listOf(
                     "Aniwave" to "https://aniwave.to",
                     "Anitaku" to "https://www.anitaku.com",
-                    "HiAnime" to "https://www.hianime.com"
+                    "HiAnime" to "https://www.hianime.com",
             )
+}
+
+object CommonUtils {
+    fun getBaseUrl(url: String): String {
+        return URI(url).let { "${it.scheme}://${it.host}" }
+    }
+
+    suspend fun haveDub(url: String, referer: String): Boolean {
+        return app.get(url, referer = referer).text.contains("TYPE=AUDIO")
+    }
 }
 
 object AniwaveUtils {
@@ -140,6 +163,16 @@ object CineZoneUtils {
             "40" -> return ServerName.Streamtape
             "41" -> return ServerName.Vidplay
             "45" -> return ServerName.Filemoon
+        }
+        return ServerName.NONE
+    }
+}
+
+object VidsrcToUtils {
+    fun serverName(id: String): ServerName {
+        when (id) {
+            "Vidplay" -> return ServerName.Vidplay
+            "Filemoon" -> return ServerName.Filemoon
         }
         return ServerName.NONE
     }

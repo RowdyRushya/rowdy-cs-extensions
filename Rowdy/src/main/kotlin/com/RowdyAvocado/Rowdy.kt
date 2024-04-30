@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.utils.*
 abstract class Rowdy(open val plugin: RowdyPlugin) : MainAPI() {
     open override var lang = "en"
     open override val hasMainPage = true
+    override val instantLinkLoading = true
     abstract val api: SyncAPI
     abstract val type: List<Type>
     abstract val syncId: String
@@ -23,18 +24,22 @@ abstract class Rowdy(open val plugin: RowdyPlugin) : MainAPI() {
 
     open override val mainPage = mainPageOf("Personal" to "Personal")
 
+    // This needs to be implemented by every Service provider,
+    // if they are introducing external main page section other than Personal
     open suspend fun MainPageRequest.toSearchResponseList(
             page: Int
     ): Pair<List<SearchResponse>, Boolean> {
         return emptyList<SearchResponse>() to false
     }
 
-    override suspend fun search(query: String): List<SearchResponse>? {
+    // This method can be overridden in child service to modify search
+    override open suspend fun search(query: String): List<SearchResponse>? {
         return api.search(query)
     }
 
     open override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         if (request.name.equals("Personal")) {
+            // Reading and manipulating personal library
             var homePageList =
                     api.getPersonalLibrary()?.allLibraryLists?.mapNotNull {
                         if (it.items.isEmpty()) return@mapNotNull null
@@ -45,11 +50,13 @@ abstract class Rowdy(open val plugin: RowdyPlugin) : MainAPI() {
                             ?: return null
             return newHomePageResponse(homePageList, false)
         } else {
+            // Other new sections will be generated if toSearchResponseList() is overridden
             val data = request.toSearchResponseList(page)
             return newHomePageResponse(request.name, data.first, data.second)
         }
     }
 
+    // This load() only supports animes and for movies you can override this function
     open override suspend fun load(url: String): LoadResponse {
         val id = url.removeSuffix("/").substringAfterLast("/")
         val data = api.getResult(id) ?: throw NotImplementedError("Unable to fetch show details")

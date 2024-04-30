@@ -2,15 +2,6 @@ package com.RowdyAvocado
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-enum class ServerName {
-    MyCloud,
-    Mp4upload,
-    Streamtape,
-    Vidplay,
-    Filemoon,
-    NONE
-}
-
 enum class Type {
     ANIME,
     MEDIA,

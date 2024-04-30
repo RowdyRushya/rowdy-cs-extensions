@@ -1,7 +1,7 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-import android.util.Log
+
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
@@ -30,7 +30,6 @@ class Tmdb(val plugin: RowdyPlugin) : TmdbProvider() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("rowdy", data)
         val mediaData = AppUtils.parseJson<LinkData>(data)
         type
                 .filter {

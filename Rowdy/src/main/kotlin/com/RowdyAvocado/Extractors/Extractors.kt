@@ -1,93 +1,61 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-import android.util.Log
+import android.util.Base64
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
+import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.Mp4Upload
 import com.lagradost.cloudstream3.extractors.Vidplay
-import com.lagradost.cloudstream3.utils.AppUtils
-import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.cloudstream3.utils.loadExtractor
 import java.net.URI
+import java.net.URLDecoder
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
 import org.jsoup.Jsoup
 
-class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
-    override val mainUrl = "https://rowdy.to"
-    override val name = "Rowdy Extractor"
-    override val requiresReferer = false
+object RowdyContentExtractors {
 
-    override suspend fun getUrl(
+    suspend fun commonLinkLoader(
+            providerName: String?,
+            serverName: ServerName?,
             url: String,
-            referer: String?,
+            dubStatus: String?,
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        val data = AppUtils.parseJson<LinkData>(url)
-        Log.d("rowdy", data.toString())
-        when (type) {
-            Type.ANIME -> {
-                plugin.storage.animeProviders.filter { it.enabled }.amap { provider ->
-                    when (provider.name) {
-                        "Aniwave" -> {
-                            aniwaveExtractor(
-                                    provider.name,
-                                    provider.domain,
-                                    data,
-                                    subtitleCallback,
-                                    callback
-                            )
-                        }
-                        else -> {}
-                    }
-                }
+        val domain = CommonUtils.getBaseUrl(url)
+        when (serverName) {
+            ServerName.Vidplay ->
+                    AnyVidplay(providerName, dubStatus, domain)
+                            .getUrl(url, domain, subtitleCallback, callback)
+            ServerName.MyCloud ->
+                    AnyMyCloud(providerName, dubStatus, domain)
+                            .getUrl(url, domain, subtitleCallback, callback)
+            ServerName.Filemoon ->
+                    AnyFileMoon(providerName, dubStatus, domain)
+                            .getUrl(url, null, subtitleCallback, callback)
+            ServerName.Mp4upload ->
+                    AnyMp4Upload(providerName, dubStatus, domain)
+                            .getUrl(url, domain, subtitleCallback, callback)
+            else -> {
+                loadExtractor(url, subtitleCallback, callback)
             }
-            Type.MEDIA -> {
-                plugin.storage.mediaProviders.filter { it.enabled }.amap { provider ->
-                    when (provider.name) {
-                        "CineZone" -> {
-                            cinezoneExtractor(
-                                    provider.name,
-                                    provider.domain,
-                                    data,
-                                    subtitleCallback,
-                                    callback
-                            )
-                        }
-                        "VidsrcNet" -> {
-                            vidsrcNetExtractor(
-                                    provider.name,
-                                    provider.domain,
-                                    data,
-                                    subtitleCallback,
-                                    callback
-                            )
-                        }
-                        else -> {}
-                    }
-                }
-            }
-            else -> {}
         }
-    }
-
-    private fun buildExtractorLink(
-            serverName: String,
-            link: String,
-            referer: String = "",
-            quality: Int = Qualities.Unknown.value
-    ): ExtractorLink {
-        return ExtractorLink(serverName, serverName, link, referer, quality, link.contains(".m3u8"))
     }
 
     // #region - Aniwave (https://aniwave.to) Extractor
 
-    private suspend fun aniwaveExtractor(
+    suspend fun aniwaveExtractor(
             providerName: String?,
             url: String?,
             data: LinkData,
@@ -147,7 +115,7 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
 
     // #region - CineZone (https://cinezone.to) Extractor
 
-    private suspend fun cinezoneExtractor(
+    suspend fun cinezoneExtractor(
             providerName: String?,
             url: String?,
             data: LinkData,
@@ -203,9 +171,9 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
 
     // #endregion - CineZone (https://cinezone.to) Extractor
 
-    // #region - VidSrc (https://vidsrc.net) Extractor
+    // #region - VidSrcNet (https://vidsrc.net) Extractor
 
-    private suspend fun vidsrcNetExtractor(
+    suspend fun vidsrcNetExtractor(
             providerName: String?,
             url: String?,
             data: LinkData,
@@ -256,35 +224,153 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
         return "http:$link"
     }
 
-    // #endregion - VidSrc (https://vidsrc.net/) Extractor
-}
+    // #endregion - VidSrcNet (https://vidsrc.net/) Extractor
 
-private suspend fun commonLinkLoader(
-        providerName: String?,
-        serverName: ServerName?,
-        url: String,
-        dubStatus: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-) {
-    val domain = "https://" + URI(url).host
-    when (serverName) {
-        ServerName.Vidplay ->
-                AnyVidplay(providerName, dubStatus, domain)
-                        .getUrl(url, domain, subtitleCallback, callback)
-        ServerName.MyCloud ->
-                AnyMyCloud(providerName, dubStatus, domain)
-                        .getUrl(url, domain, subtitleCallback, callback)
-        ServerName.Filemoon ->
-                AnyFileMoon(providerName, dubStatus, domain)
-                        .getUrl(url, null, subtitleCallback, callback)
-        ServerName.Mp4upload ->
-                AnyMp4Upload(providerName, dubStatus, domain)
-                        .getUrl(url, domain, subtitleCallback, callback)
-        else -> {
-            loadExtractor(url, subtitleCallback, callback)
+    // #region - VidSrcTo (https://vidsrc.net) Extractor
+
+    suspend fun vidsrcToExtractor(
+            providerName: String?,
+            url: String?,
+            data: LinkData,
+            subtitleCallback: (SubtitleFile) -> Unit,
+            callback: (ExtractorLink) -> Unit
+    ) {
+        if (data.isAnime) return // right now, anime is not supported from VidsrcTo API
+        val id = data.tmdbId ?: data.imdbId ?: throw Exception("Valid ID not available")
+        val iFrameUrl =
+                if (data.season == null) {
+                    "$url/embed/movie/$id"
+                } else {
+                    "$url/embed/tv/$id/${data.season}/${data.episode}"
+                }
+        val mediaId = app.get(iFrameUrl).document.selectFirst("ul.episodes li a")?.attr("data-id")
+        val res =
+                app.get("$url/ajax/embed/episode/$mediaId/sources")
+                        .parsedSafe<VidsrctoEpisodeSources>()
+        if (res?.status == 200) {
+            res.result?.apmap { source ->
+                val embedRes =
+                        app.get("$url/ajax/embed/source/${source.id}")
+                                .parsedSafe<VidsrctoEmbedSource>()
+                val finalUrl = DecryptUrl(embedRes?.result?.encUrl ?: "")
+                commonLinkLoader(
+                        providerName,
+                        VidsrcToUtils.serverName(source.title),
+                        finalUrl,
+                        null,
+                        subtitleCallback,
+                        callback
+                )
+            }
         }
     }
+
+    private fun DecryptUrl(encUrl: String): String {
+        var data = encUrl.toByteArray()
+        data = Base64.decode(data, Base64.URL_SAFE)
+        val rc4Key = SecretKeySpec("WXrUARXb1aDLaZjI".toByteArray(), "RC4")
+        val cipher = Cipher.getInstance("RC4")
+        cipher.init(Cipher.DECRYPT_MODE, rc4Key, cipher.parameters)
+        data = cipher.doFinal(data)
+        return URLDecoder.decode(data.toString(Charsets.UTF_8), "utf-8")
+    }
+    data class VidsrctoEpisodeSources(
+            @JsonProperty("status") val status: Int,
+            @JsonProperty("result") val result: List<VidsrctoResult>?
+    )
+
+    data class VidsrctoResult(
+            @JsonProperty("id") val id: String,
+            @JsonProperty("title") val title: String
+    )
+
+    data class VidsrctoEmbedSource(
+            @JsonProperty("status") val status: Int,
+            @JsonProperty("result") val result: VidsrctoUrl
+    )
+
+    data class VidsrctoUrl(@JsonProperty("url") val encUrl: String)
+
+    // #endregion - VidSrcTo (https://vidsrc.net) Extractor
+
+    // #region - Moflix (https://myfilestorage.xyz) Extractor
+
+    suspend fun moflixExtractor(
+            providerName: String?,
+            url: String?,
+            data: LinkData,
+            subtitleCallback: (SubtitleFile) -> Unit,
+            callback: (ExtractorLink) -> Unit
+    ) {
+        if (data.tmdbId.isNullOrEmpty()) return
+        val id =
+                (if (data.season == null) {
+                            "tmdb|movie|${data.tmdbId}"
+                        } else {
+                            "tmdb|series|${data.tmdbId}"
+                        })
+                        .let { base64Encode(it.toByteArray()) }
+
+        val loaderUrl = "$url/api/v1/titles/$id?loader=titlePage"
+        val url2 =
+                if (data.season == null) {
+                    loaderUrl
+                } else {
+                    val mediaId =
+                            app.get(loaderUrl, referer = "$url/")
+                                    .parsedSafe<MoflixResponse>()
+                                    ?.title
+                                    ?.id
+                    "$url/api/v1/titles/$mediaId/seasons/${data.season}/episodes/${data.episode}?loader=episodePage"
+                }
+
+        val res = app.get(url2, referer = "$url/").parsedSafe<MoflixResponse>()
+        (res?.episode ?: res?.title)?.videos?.filter { it.category.equals("full", true) }?.apmap {
+                iframe ->
+            val response = app.get(iframe.src ?: return@apmap, referer = "$url/")
+            val host = CommonUtils.getBaseUrl(iframe.src)
+            val doc = response.document.selectFirst("script:containsData(sources:)")?.data()
+            val script =
+                    if (doc.isNullOrEmpty()) {
+                        getAndUnpack(response.text)
+                    } else {
+                        doc
+                    }
+            val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script)?.groupValues?.getOrNull(1)
+            // not sure why this line messes with loading
+            // if (CommonUtils.haveDub(m3u8 ?: return@apmap, "$host/") == false) return@apmap
+            callback.invoke(
+                    ExtractorLink(
+                            providerName ?: "",
+                            "$providerName:${iframe.name}",
+                            m3u8 ?: return@apmap,
+                            "$host/",
+                            iframe.quality?.filter { it.isDigit() }?.toIntOrNull()
+                                    ?: Qualities.Unknown.value,
+                            INFER_TYPE
+                    )
+            )
+        }
+    }
+
+    data class MoflixResponse(
+            @JsonProperty("title") val title: Episode? = null,
+            @JsonProperty("episode") val episode: Episode? = null,
+    ) {
+        data class Episode(
+                @JsonProperty("id") val id: Int? = null,
+                @JsonProperty("videos") val videos: ArrayList<Videos>? = arrayListOf(),
+        ) {
+            data class Videos(
+                    @JsonProperty("name") val name: String? = null,
+                    @JsonProperty("category") val category: String? = null,
+                    @JsonProperty("src") val src: String? = null,
+                    @JsonProperty("quality") val quality: String? = null,
+            )
+        }
+    }
+
+    // #endregion - Moflix (https://myfilestorage.xyz) Extractor
 }
 
 // #region - Custom Extractors

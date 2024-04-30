@@ -1,7 +1,7 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-import android.util.Log
+
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
@@ -50,10 +50,10 @@ class Simkl(override val plugin: RowdyPlugin) : Rowdy(plugin) {
 
     private fun SimklEpisodeObject.toLinkData(
             showName: String,
+            ids: SimklIds?,
             year: Int?,
             isAnime: Boolean
     ): LinkData {
-        Log.d("rowdy", this.type.toString())
         return LinkData(
                 simklId = ids?.simkl,
                 imdbId = ids?.imdb,
@@ -71,11 +71,12 @@ class Simkl(override val plugin: RowdyPlugin) : Rowdy(plugin) {
 
     private fun SimklEpisodeObject.toEpisode(
             showName: String,
+            ids: SimklIds?,
             year: Int?,
             isAnime: Boolean
     ): Episode {
         val poster = "https://simkl.in/episodes/${img}_c.webp"
-        val linkData = this.toLinkData(showName, year, isAnime).toStringData()
+        val linkData = this.toLinkData(showName, ids, year, isAnime).toStringData()
         return Episode(
                 data = linkData,
                 name = title,
@@ -131,13 +132,13 @@ class Simkl(override val plugin: RowdyPlugin) : Rowdy(plugin) {
                 this.recommendations = data.recommendations?.map { it.toSearchResponse() }
             }
         } else {
-            val test =
+            val eps =
                     app.get("$apiUrl/tv/episodes/$id?client_id=$clientId&extended=full")
                             .parsedSafe<Array<SimklEpisodeObject>>()
                             ?: throw Exception("Unable to fetch episodes")
             val episodes =
-                    test.filter { it.type.equals("episode") }.map {
-                        it.toEpisode(title, year, data.type.equals("anime"))
+                    eps.filter { it.type.equals("episode") }.map {
+                        it.toEpisode(title, data.ids, year, data.type.equals("anime"))
                     }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.addSimklId(id.toInt())
