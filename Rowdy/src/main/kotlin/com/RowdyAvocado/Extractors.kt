@@ -1,7 +1,7 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-
+import android.util.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
@@ -16,7 +16,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import java.net.URI
 import org.jsoup.Jsoup
 
-class RowdyExtractor(val type: Type) : ExtractorApi() {
+class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
     override val mainUrl = "https://rowdy.to"
     override val name = "Rowdy Extractor"
     override val requiresReferer = false
@@ -27,37 +27,39 @@ class RowdyExtractor(val type: Type) : ExtractorApi() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        val data = AppUtils.parseJson<EpisodeData>(url)
-        val provider = AppUtils.parseJson<Provider>(referer ?: "")
+        val data = AppUtils.parseJson<LinkData>(url)
+        Log.d("rowdy", data.toString())
         when (type) {
             Type.ANIME -> {
-                when (provider.name) {
-                    "Aniwave" -> {
-                        aniwaveExtractor(
-                                provider.name,
-                                provider.domain,
-                                referer,
-                                data,
-                                subtitleCallback,
-                                callback
-                        )
+                plugin.animeProviders.filter { it.enabled }.amap { provider ->
+                    when (provider.name) {
+                        "Aniwave" -> {
+                            aniwaveExtractor(
+                                    provider.name,
+                                    provider.domain,
+                                    data,
+                                    subtitleCallback,
+                                    callback
+                            )
+                        }
+                        else -> {}
                     }
-                    else -> {}
                 }
             }
             Type.MEDIA -> {
-                when (provider.name) {
-                    "CineZone" -> {
-                        cinezoneExtractor(
-                                provider.name,
-                                provider.domain,
-                                referer,
-                                data,
-                                subtitleCallback,
-                                callback
-                        )
+                plugin.mediaProviders.filter { it.enabled }.amap { provider ->
+                    when (provider.name) {
+                        "CineZone" -> {
+                            cinezoneExtractor(
+                                    provider.name,
+                                    provider.domain,
+                                    data,
+                                    subtitleCallback,
+                                    callback
+                            )
+                        }
+                        else -> {}
                     }
-                    else -> {}
                 }
             }
             else -> {}
@@ -76,14 +78,14 @@ class RowdyExtractor(val type: Type) : ExtractorApi() {
     private suspend fun aniwaveExtractor(
             providerName: String?,
             url: String?,
-            referer: String?,
-            data: EpisodeData,
+            data: LinkData,
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
+        val episode = data.episode ?: if (data.isAnime && data.type.equals("Movie")) 1 else return
         val searchPage =
                 app.get(
-                                "$url/filter?keyword=${data.name}&year[]=${data.seasonYear?:""}&sort=most_relevance"
+                                "$url/filter?keyword=${data.title}&year[]=${data.year?:""}&sort=most_relevance"
                         )
                         .document
         val id =
@@ -97,7 +99,7 @@ class RowdyExtractor(val type: Type) : ExtractorApi() {
                 Jsoup.parse(seasonData)
                         .body()
                         .select(".episodes > ul > li > a")
-                        .find { it.attr("data-num").equals(data.epNum.toString()) }
+                        .find { it.attr("data-num").equals(episode.toString()) }
                         ?.attr("data-ids")
                         ?: throw Error("Could not find episode IDs in response")
         val episodeDataUrl =
@@ -122,7 +124,6 @@ class RowdyExtractor(val type: Type) : ExtractorApi() {
                         AniwaveUtils.serverName(serverId),
                         decUrl,
                         dubType,
-                        referer,
                         subtitleCallback,
                         callback
                 )
@@ -133,14 +134,13 @@ class RowdyExtractor(val type: Type) : ExtractorApi() {
     private suspend fun cinezoneExtractor(
             providerName: String?,
             url: String?,
-            referer: String?,
-            data: EpisodeData,
+            data: LinkData,
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
         val searchPage =
                 app.get(
-                                "$url/filter?keyword=${data.name}&year[]=${data.seasonYear?:""}&sort=most_relevance"
+                                "$url/filter?keyword=${data.title}&year[]=${data.year?:""}&sort=most_relevance"
                         )
                         .document
         val id =
@@ -154,9 +154,9 @@ class RowdyExtractor(val type: Type) : ExtractorApi() {
                 Jsoup.parse(seasonData)
                         .body()
                         .select(".episodes")
-                        .find { it.attr("data-season").equals(data.sNum?.toString() ?: "1") }
+                        .find { it.attr("data-season").equals(data.season?.toString() ?: "1") }
                         ?.select("li a")
-                        ?.find { it.attr("data-num").equals(data.epNum?.toString() ?: "1") }
+                        ?.find { it.attr("data-num").equals(data.episode?.toString() ?: "1") }
                         ?.attr("data-id")
                         ?: throw Error("Could not find episode IDs in response")
         val episodeDataUrl =
@@ -179,7 +179,6 @@ class RowdyExtractor(val type: Type) : ExtractorApi() {
                     CineZoneUtils.serverName(serverId),
                     decUrl,
                     null,
-                    referer,
                     subtitleCallback,
                     callback
             )
@@ -192,7 +191,6 @@ private suspend fun commonLinkLoader(
         serverName: ServerName,
         url: String,
         dubStatus: String?,
-        referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
 ) {
@@ -200,16 +198,16 @@ private suspend fun commonLinkLoader(
     when (serverName) {
         ServerName.Vidplay ->
                 AnyVidplay(providerName, dubStatus, domain)
-                        .getUrl(url, referer, subtitleCallback, callback)
+                        .getUrl(url, domain, subtitleCallback, callback)
         ServerName.MyCloud ->
                 AnyMyCloud(providerName, dubStatus, domain)
-                        .getUrl(url, referer, subtitleCallback, callback)
+                        .getUrl(url, domain, subtitleCallback, callback)
         ServerName.Filemoon ->
                 AnyFileMoon(providerName, dubStatus, domain)
                         .getUrl(url, null, subtitleCallback, callback)
         ServerName.Mp4upload ->
                 AnyMp4Upload(providerName, dubStatus, domain)
-                        .getUrl(url, referer, subtitleCallback, callback)
+                        .getUrl(url, domain, subtitleCallback, callback)
         else -> {
             loadExtractor(url, subtitleCallback, callback)
         }
@@ -257,94 +255,3 @@ class StreamWish : Filesim() {
     override val mainUrl = "https://awish.pro"
     override val requiresReferer = false
 }
-
-// class AnyVidplay(provider: String?, dubType: String?, domain: String = "") : ExtractorApi() {
-//     override val name =
-//             (if (provider != null) "$provider: " else "") +
-//                     "Vidplay" +
-//                     (if (dubType != null) ": $dubType" else "")
-//     override val mainUrl = domain
-//     override val requiresReferer = false
-
-//     override suspend fun getUrl(
-//             url: String,
-//             referer: String?,
-//             subtitleCallback: (SubtitleFile) -> Unit,
-//             callback: (ExtractorLink) -> Unit
-//     ) {
-//         val id = url.substringBefore("?").substringAfterLast("/")
-//         val encodeId = encodeId(id, listOf("mpYdXXCWOdCmQxsx", "i0HTHEA9gTstnw1w"))
-//         val mediaUrl = callFutoken(encodeId, url)
-//         val res =
-//                 app.get(
-//                                 "$mediaUrl",
-//                                 headers =
-//                                         mapOf(
-//                                                 "Accept" to
-//                                                         "application/json, text/javascript, */*;
-// q=0.01",
-//                                                 "X-Requested-With" to "XMLHttpRequest",
-//                                         ),
-//                                 referer = url
-//                         )
-//                         .parsedSafe<Response>()
-//                         ?.result
-
-//         res?.sources?.map {
-//             M3u8Helper.generateM3u8(this.name, it.file ?: return@map,
-// "$mainUrl/").forEach(callback)
-//         }
-
-//         res?.tracks?.filter { it.kind == "captions" }?.map {
-//             subtitleCallback.invoke(SubtitleFile(it.label ?: return@map, it.file ?: return@map))
-//         }
-//     }
-
-//     private suspend fun callFutoken(id: String, url: String): String? {
-//         val script = app.get("$mainUrl/futoken", referer = url).text
-//         val k = "k='(\\S+)'".toRegex().find(script)?.groupValues?.get(1) ?: return null
-//         val a = mutableListOf(k)
-//         for (i in id.indices) {
-//             a.add((k[i % k.length].code + id[i].code).toString())
-//         }
-//         return "$mainUrl/mediainfo/${a.joinToString(",")}?${url.substringAfter("?")}"
-//     }
-
-//     private fun encodeId(id: String, keyList: List<String>): String {
-//         val cipher1 = Cipher.getInstance("RC4")
-//         val cipher2 = Cipher.getInstance("RC4")
-//         cipher1.init(
-//                 Cipher.DECRYPT_MODE,
-//                 SecretKeySpec(keyList[0].toByteArray(), "RC4"),
-//                 cipher1.parameters
-//         )
-//         cipher2.init(
-//                 Cipher.DECRYPT_MODE,
-//                 SecretKeySpec(keyList[1].toByteArray(), "RC4"),
-//                 cipher2.parameters
-//         )
-//         var input = id.toByteArray()
-//         input = cipher1.doFinal(input)
-//         input = cipher2.doFinal(input)
-//         return base64Encode(input).replace("/", "_")
-//     }
-
-//     data class Tracks(
-//             @JsonProperty("file") val file: String? = null,
-//             @JsonProperty("label") val label: String? = null,
-//             @JsonProperty("kind") val kind: String? = null,
-//     )
-
-//     data class Sources(
-//             @JsonProperty("file") val file: String? = null,
-//     )
-
-//     data class Result(
-//             @JsonProperty("sources") val sources: ArrayList<Sources>? = arrayListOf(),
-//             @JsonProperty("tracks") val tracks: ArrayList<Tracks>? = arrayListOf(),
-//     )
-
-//     data class Response(
-//             @JsonProperty("result") val result: Result? = null,
-//     )
-// }

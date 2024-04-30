@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.syncproviders.SyncAPI
 import com.lagradost.cloudstream3.utils.*
 
@@ -14,7 +13,7 @@ abstract class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
     open override var lang = "en"
     open override val hasMainPage = true
     abstract val api: SyncAPI
-    abstract val type: Type
+    abstract val type: List<Type>
     abstract val syncId: String
     abstract val loginRequired: Boolean
 
@@ -58,8 +57,16 @@ abstract class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
         val epCount = data.nextAiring?.episode?.minus(1) ?: data.totalEpisodes ?: 0
         val episodes =
                 (1..epCount).map { i ->
-                    val dataUrl = EpisodeData(data.title, year, 1, i).toStringData()
-                    Episode(dataUrl, season = 1, episode = i)
+                    val linkData =
+                            LinkData(
+                                            title = data.title,
+                                            year = year,
+                                            season = 1,
+                                            episode = i,
+                                            isAnime = true
+                                    )
+                                    .toStringData()
+                    Episode(linkData, season = 1, episode = i)
                 }
         return newAnimeLoadResponse(data.title ?: "", url, TvType.Anime) {
             this.syncData = mutableMapOf(syncId to id)
@@ -74,11 +81,15 @@ abstract class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val providers =
-                if (type.equals(Type.ANIME)) plugin.animeProviders else plugin.mediaProviders
-        providers.toList().filter { it.enabled }.amap {
-            RowdyExtractor(type).getUrl(data, it.toStringData(), subtitleCallback, callback)
-        }
+        val mediaData = AppUtils.parseJson<LinkData>(data)
+        type
+                .filter {
+                    (mediaData.isAnime && it == Type.ANIME) ||
+                            (!mediaData.isAnime && it == Type.MEDIA)
+                }
+                .amap { t ->
+                    RowdyExtractor(t, plugin).getUrl(data, null, subtitleCallback, callback)
+                }
         return true
     }
 }

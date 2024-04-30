@@ -37,6 +37,7 @@ object AniwaveUtils {
         return URLDecoder.decode(vrf.toString(Charsets.UTF_8), "utf-8")
     }
 
+    @kotlin.ExperimentalStdlibApi
     private fun rot13(vrf: ByteArray): ByteArray {
         for (i in vrf.indices) {
             val byte = vrf[i]
@@ -97,6 +98,7 @@ object CineZoneUtils {
         return URLDecoder.decode(vrf.toString(Charsets.UTF_8), "utf-8")
     }
 
+    @kotlin.ExperimentalStdlibApi
     private fun rot13(vrf: ByteArray): ByteArray {
         for (i in vrf.indices) {
             val byte = vrf[i]
@@ -145,21 +147,30 @@ data class Provider(
         @JsonProperty("userModified") var userModified: Boolean = false
 )
 
-data class EpisodeData(
-        @JsonProperty("name") var name: String? = null,
-        @JsonProperty("seasonYear") var seasonYear: Int? = null,
-        @JsonProperty("sNum") var sNum: Int? = null,
-        @JsonProperty("epNum") var epNum: Int? = null,
-        @JsonProperty("ids") var ids: Ids? = null,
-)
-
-data class Ids(
-        @JsonProperty("simkl") val simkl: Int? = null,
-        @JsonProperty("simkl_id") val simkl2: Int? = null,
-        @JsonProperty("imdb") val imdb: String? = null,
-        @JsonProperty("tmdb") val tmdb: String? = null,
-        @JsonProperty("mal") val mal: String? = null,
-        @JsonProperty("anilist") val anilist: String? = null,
+data class LinkData(
+        val simklId: Int? = null,
+        val traktId: Int? = null,
+        val imdbId: String? = null,
+        val tmdbId: String? = null,
+        val tvdbId: Int? = null,
+        val type: String? = null,
+        val season: Int? = null,
+        val episode: Int? = null,
+        val aniId: String? = null,
+        val animeId: String? = null,
+        val title: String? = null,
+        val year: Int? = null,
+        val orgTitle: String? = null,
+        val isAnime: Boolean = false,
+        val airedYear: Int? = null,
+        val lastSeason: Int? = null,
+        val epsTitle: String? = null,
+        val jpTitle: String? = null,
+        val date: String? = null,
+        val airedDate: String? = null,
+        val isAsian: Boolean = false,
+        val isBollywood: Boolean = false,
+        val isCartoon: Boolean = false,
 )
 
 data class ApiResponseHTML(

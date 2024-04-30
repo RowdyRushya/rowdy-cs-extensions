@@ -1,9 +1,10 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
@@ -18,7 +19,7 @@ class Simkl(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
     override val supportedSyncNames = setOf(SyncIdName.Simkl)
     override val hasMainPage = true
     override val hasQuickSearch = false
-    override val type = Type.MEDIA
+    override val type = listOf(Type.MEDIA, Type.ANIME)
     override val api = AccountManager.simklApi
     override val syncId = "simkl"
     override val loginRequired = true
@@ -33,17 +34,56 @@ class Simkl(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
         }
     }
 
-    private fun SimklEpisodeObject.toEpisode(showName: String, year: Int?): Episode {
-        val data = this
+    private fun SimklMediaObject.toLinkData(): LinkData {
+        return LinkData(
+                simklId = ids?.simkl,
+                imdbId = ids?.imdb,
+                tmdbId = ids?.tmdb,
+                aniId = ids?.anilist,
+                animeId = ids?.mal,
+                title = title,
+                year = year,
+                type = type,
+                isAnime = type.equals("anime")
+        )
+    }
+
+    private fun SimklEpisodeObject.toLinkData(
+            showName: String,
+            year: Int?,
+            isAnime: Boolean
+    ): LinkData {
+        Log.d("rowdy", this.type.toString())
+        return LinkData(
+                simklId = ids?.simkl,
+                imdbId = ids?.imdb,
+                tmdbId = ids?.tmdb,
+                aniId = ids?.anilist,
+                animeId = ids?.mal,
+                title = showName,
+                year = year,
+                season = season,
+                episode = episode,
+                type = type,
+                isAnime = isAnime
+        )
+    }
+
+    private fun SimklEpisodeObject.toEpisode(
+            showName: String,
+            year: Int?,
+            isAnime: Boolean
+    ): Episode {
         val poster = "https://simkl.in/episodes/${img}_c.webp"
-        val epData = EpisodeData(showName, year, season, episode).toStringData()
-        return newEpisode(epData) {
-            this.name = title
-            this.description = desc
-            this.season = data.season
-            this.episode = data.episode
-            this.posterUrl = poster
-        }
+        val linkData = this.toLinkData(showName, year, isAnime).toStringData()
+        return Episode(
+                data = linkData,
+                name = title,
+                description = desc,
+                posterUrl = poster,
+                season = season,
+                episode = episode
+        )
     }
 
     override val mainPage =
@@ -78,13 +118,13 @@ class Simkl(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
                 app.get("$apiUrl/tv/$id?client_id=$clientId&extended=full")
                         .parsedSafe<SimklMediaObject>()
                         ?: throw ErrorLoadingException("Unable to load data")
-        val title = data.title ?: throw ErrorLoadingException("Unable to find title")
+        val title = data.title ?: ""
         val year = data.year
         val posterUrl = getPosterUrl(data.poster ?: "")
         return if (data.type.equals("movie")) {
-            val dataUrl = EpisodeData(title, year, null, null).toStringData()
-            newMovieLoadResponse(title, url, TvType.Movie, dataUrl) {
-                this.syncData = mutableMapOf(syncId to id)
+            val linkData = data.toLinkData().toStringData()
+            newMovieLoadResponse(title, url, TvType.Movie, linkData) {
+                this.addSimklId(id.toInt())
                 this.year = year
                 this.posterUrl = posterUrl
                 this.plot = data.overview
@@ -96,9 +136,11 @@ class Simkl(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
                             .parsedSafe<Array<SimklEpisodeObject>>()
                             ?: throw Exception("Unable to fetch episodes")
             val episodes =
-                    test.filter { it.type.equals("episode") }.map { it.toEpisode(title, year) }
+                    test.filter { it.type.equals("episode") }.map {
+                        it.toEpisode(title, year, data.type.equals("anime"))
+                    }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.syncData = mutableMapOf(syncId to id)
+                this.addSimklId(id.toInt())
                 this.year = year
                 this.posterUrl = posterUrl
                 this.plot = data.overview
@@ -106,28 +148,38 @@ class Simkl(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
             }
         }
     }
+
+    open class SimklMediaObject(
+            @JsonProperty("title") val title: String? = null,
+            @JsonProperty("year") val year: Int? = null,
+            @JsonProperty("ids") val ids: SimklIds?,
+            @JsonProperty("total_episodes") val total_episodes: Int? = null,
+            @JsonProperty("status") val status: String? = null,
+            @JsonProperty("poster") val poster: String? = null,
+            @JsonProperty("type") val type: String? = null,
+            @JsonProperty("overview") val overview: String? = null,
+            @JsonProperty("genres") val genres: List<String>? = null,
+            @JsonProperty("users_recommendations")
+            val recommendations: List<SimklMediaObject>? = null,
+    )
+
+    open class SimklEpisodeObject(
+            @JsonProperty("title") val title: String? = null,
+            @JsonProperty("description") val desc: String? = null,
+            @JsonProperty("season") val season: Int? = null,
+            @JsonProperty("episode") val episode: Int? = null,
+            @JsonProperty("type") val type: String? = null,
+            @JsonProperty("aired") val aired: Boolean? = null,
+            @JsonProperty("img") val img: String? = null,
+            @JsonProperty("ids") val ids: SimklIds?,
+    )
+
+    data class SimklIds(
+            @JsonProperty("simkl") val simkl: Int? = null,
+            @JsonProperty("simkl_id") val simkl2: Int? = null,
+            @JsonProperty("imdb") val imdb: String? = null,
+            @JsonProperty("tmdb") val tmdb: String? = null,
+            @JsonProperty("mal") val mal: String? = null,
+            @JsonProperty("anilist") val anilist: String? = null,
+    )
 }
-
-open class SimklMediaObject(
-        @JsonProperty("title") val title: String? = null,
-        @JsonProperty("year") val year: Int? = null,
-        @JsonProperty("ids") val ids: Ids?,
-        @JsonProperty("total_episodes") val total_episodes: Int? = null,
-        @JsonProperty("status") val status: String? = null,
-        @JsonProperty("poster") val poster: String? = null,
-        @JsonProperty("type") val type: String? = null,
-        @JsonProperty("overview") val overview: String? = null,
-        @JsonProperty("genres") val genres: List<String>? = null,
-        @JsonProperty("users_recommendations") val recommendations: List<SimklMediaObject>? = null,
-)
-
-open class SimklEpisodeObject(
-        @JsonProperty("title") val title: String? = null,
-        @JsonProperty("description") val desc: String? = null,
-        @JsonProperty("season") val season: Int? = null,
-        @JsonProperty("episode") val episode: Int? = null,
-        @JsonProperty("type") val type: String? = null,
-        @JsonProperty("aired") val aired: Boolean? = null,
-        @JsonProperty("img") val img: String? = null,
-        @JsonProperty("ids") val ids: Ids?,
-)

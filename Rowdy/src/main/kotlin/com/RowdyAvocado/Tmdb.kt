@@ -1,10 +1,9 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-
+import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.metaproviders.TmdbLink
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
@@ -14,7 +13,7 @@ class Tmdb(val plugin: RowdyPlugin) : TmdbProvider() {
     override var mainUrl = "https://www.themoviedb.org"
     override var supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.AsianDrama)
     override var lang = "en"
-    private val type = Type.MEDIA
+    private val type = listOf(Type.MEDIA, Type.ANIME)
     override val supportedSyncNames = setOf(SyncIdName.Simkl)
     override val hasMainPage = true
     override val hasQuickSearch = false
@@ -25,22 +24,23 @@ class Tmdb(val plugin: RowdyPlugin) : TmdbProvider() {
         return mapper.writeValueAsString(this)
     }
 
-    private fun TmdbLink.toEpisodeData(): EpisodeData {
-        return EpisodeData(this.movieName, null, this.season, this.episode)
-    }
-
     override suspend fun loadLinks(
             data: String,
             isCasting: Boolean,
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val mediaData = AppUtils.parseJson<TmdbLink>(data).toEpisodeData().toStringData()
-        val providers =
-                if (type.equals(Type.ANIME)) plugin.animeProviders else plugin.mediaProviders
-        providers.toList().filter { it.enabled }.amap {
-            RowdyExtractor(type).getUrl(mediaData, it.toStringData(), subtitleCallback, callback)
-        }
+        Log.d("rowdy", data)
+        val mediaData = AppUtils.parseJson<LinkData>(data)
+        type
+                .filter {
+                    (mediaData.isAnime && it == Type.ANIME) ||
+                            (!mediaData.isAnime && it == Type.MEDIA)
+                }
+                .amap { t ->
+                    RowdyExtractor(t, plugin)
+                            .getUrl(mediaData.toStringData(), null, subtitleCallback, callback)
+                }
         return true
     }
 }

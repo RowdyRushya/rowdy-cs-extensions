@@ -19,7 +19,7 @@ class MyAnimeList(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
     override val hasMainPage = true
     override val hasQuickSearch = false
     override val api: SyncAPI = MALApi(1)
-    override val type = Type.ANIME
+    override val type = listOf(Type.ANIME)
     override val syncId = "MAL"
     override val loginRequired = true
     private final val mediaLimit = 50
