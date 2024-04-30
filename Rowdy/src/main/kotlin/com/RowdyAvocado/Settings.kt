@@ -33,8 +33,8 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
     private var param1: String? = null
     private var param2: String? = null
 
-    private var mediaProviders: Array<Provider> = plugin.mediaProviders
-    private var animeProviders: Array<Provider> = plugin.animeProviders
+    private var mediaProviders: Array<Provider> = plugin.storage.mediaProviders
+    private var animeProviders: Array<Provider> = plugin.storage.animeProviders
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -136,7 +136,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                 DialogInterface.OnClickListener { _, which ->
                     when (which) {
                         DialogInterface.BUTTON_POSITIVE -> {
-                            plugin.deleteAllData()
+                            plugin.storage.deleteAllData()
                             plugin.reload(context)
                             showToast("Reset completed")
                             dismiss()
@@ -168,14 +168,15 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
         val mediaPrdConfig = settings.findView<LinearLayout>("media_providers_config")
         val mediaSyncRadioGroup = settings.findView<RadioGroup>("media_sync_group")
 
-        mediaPrdConfig.visibility = if (plugin.isMediaSync) View.VISIBLE else View.GONE
-        mediaSyncRadioGroup.visibility = if (plugin.isMediaSync) View.VISIBLE else View.GONE
-        mediaSyncSwitch.isChecked = plugin.isMediaSync
+        mediaPrdConfig.visibility = if (plugin.storage.isMediaService) View.VISIBLE else View.GONE
+        mediaSyncRadioGroup.visibility =
+                if (plugin.storage.isMediaService) View.VISIBLE else View.GONE
+        mediaSyncSwitch.isChecked = plugin.storage.isMediaService
 
         mediaSyncSwitch.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
-                        plugin.isMediaSync = mediaSyncSwitch.isChecked
+                        plugin.storage.isMediaService = mediaSyncSwitch.isChecked
                         mediaPrdConfig.visibility =
                                 if (mediaSyncSwitch.isChecked) View.VISIBLE else View.GONE
                         mediaSyncRadioGroup.visibility =
@@ -192,28 +193,28 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
         tmdbRadio.background = plugin.resources!!.getDrawable(outlineId, null)
         val traktRadio = settings.findView<RadioButton>("trakt")
         traktRadio.background = plugin.resources!!.getDrawable(outlineId, null)
-        simklRadio.isChecked = plugin.mediaSyncService.equals("Simkl")
-        tmdbRadio.isChecked = plugin.mediaSyncService.equals("Tmdb")
-        traktRadio.isChecked = plugin.mediaSyncService.equals("Trakt")
+        simklRadio.isChecked = plugin.storage.mediaService.equals("Simkl")
+        tmdbRadio.isChecked = plugin.storage.mediaService.equals("Tmdb")
+        traktRadio.isChecked = plugin.storage.mediaService.equals("Trakt")
 
         simklRadio.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
-                        plugin.mediaSyncService = "Simkl"
+                        plugin.storage.mediaService = "Simkl"
                     }
                 }
         )
         tmdbRadio.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
-                        plugin.mediaSyncService = "Tmdb"
+                        plugin.storage.mediaService = "Tmdb"
                     }
                 }
         )
         traktRadio.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
-                        plugin.mediaSyncService = "Trakt"
+                        plugin.storage.mediaService = "Trakt"
                     }
                 }
         )
@@ -224,13 +225,14 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
         animeSyncSwitch.background = plugin.resources!!.getDrawable(outlineId, null)
         val animePrdConfig = settings.findView<LinearLayout>("anime_providers_config")
         val animeSyncRadioGroup = settings.findView<RadioGroup>("anime_sync_group")
-        animePrdConfig.visibility = if (plugin.isAnimeSync) View.VISIBLE else View.GONE
-        animeSyncRadioGroup.visibility = if (plugin.isAnimeSync) View.VISIBLE else View.GONE
-        animeSyncSwitch.isChecked = plugin.isAnimeSync
+        animePrdConfig.visibility = if (plugin.storage.isAnimeService) View.VISIBLE else View.GONE
+        animeSyncRadioGroup.visibility =
+                if (plugin.storage.isAnimeService) View.VISIBLE else View.GONE
+        animeSyncSwitch.isChecked = plugin.storage.isAnimeService
         animeSyncSwitch.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
-                        plugin.isAnimeSync = animeSyncSwitch.isChecked
+                        plugin.storage.isAnimeService = animeSyncSwitch.isChecked
                         animePrdConfig.visibility =
                                 if (animeSyncSwitch.isChecked) View.VISIBLE else View.GONE
                         animeSyncRadioGroup.visibility =
@@ -245,20 +247,20 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
         anilistRadio.background = plugin.resources!!.getDrawable(outlineId, null)
         val malRadio = settings.findView<RadioButton>("mal")
         malRadio.background = plugin.resources!!.getDrawable(outlineId, null)
-        anilistRadio.isChecked = plugin.animeSyncService.equals("Anilist")
-        malRadio.isChecked = plugin.animeSyncService.equals("MyAnimeList")
+        anilistRadio.isChecked = plugin.storage.animeService.equals("Anilist")
+        malRadio.isChecked = plugin.storage.animeService.equals("MyAnimeList")
 
         anilistRadio.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
-                        plugin.animeSyncService = "Anilist"
+                        plugin.storage.animeService = "Anilist"
                     }
                 }
         )
         malRadio.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
-                        plugin.animeSyncService = "MyAnimeList"
+                        plugin.storage.animeService = "MyAnimeList"
                     }
                 }
         )
@@ -368,8 +370,8 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                 object : OnCheckedChangeListener {
                     override fun onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) {
                         provider.enabled = isChecked
-                        plugin.mediaProviders = mediaProviders
-                        plugin.animeProviders = animeProviders
+                        plugin.storage.mediaProviders = mediaProviders
+                        plugin.storage.animeProviders = animeProviders
                     }
                 }
         )
@@ -390,8 +392,8 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                                         DialogInterface.BUTTON_POSITIVE -> {
                                             provider.domain = editText.text.toString()
                                             provider.userModified = true
-                                            plugin.mediaProviders = mediaProviders
-                                            plugin.animeProviders = animeProviders
+                                            plugin.storage.mediaProviders = mediaProviders
+                                            plugin.storage.animeProviders = animeProviders
                                             plugin.reload(context)
                                             showToast("Domain changed")
                                             dismiss()
@@ -416,8 +418,8 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                 object : OnClickListener {
                     override fun onClick(btn: View) {
                         provider.userModified = false
-                        plugin.mediaProviders = mediaProviders
-                        plugin.animeProviders = animeProviders
+                        plugin.storage.mediaProviders = mediaProviders
+                        plugin.storage.animeProviders = animeProviders
                         plugin.reload(context)
                         showToast("Domain reset complete.")
                         dismiss()

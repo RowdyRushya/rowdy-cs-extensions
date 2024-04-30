@@ -6,8 +6,23 @@ import java.net.URLDecoder
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 
-object AniwaveUtils {
+object RowdyExtractorUtil {
+    val mediaPrdList =
+            listOf(
+                    "CineZone" to "https://cinezone.to",
+                    "VidsrcNet" to "https://vidsrc.net",
+                    "VidsrcTo" to "https://vidsrc.to",
+            )
 
+    val animePrdList =
+            listOf(
+                    "Aniwave" to "https://aniwave.to",
+                    "Anitaku" to "https://www.anitaku.com",
+                    "HiAnime" to "https://www.hianime.com"
+            )
+}
+
+object AniwaveUtils {
     fun vrfEncrypt(input: String): String {
         val rc4Key = SecretKeySpec("tGn6kIpVXBEUmqjD".toByteArray(), "RC4")
         val cipher = Cipher.getInstance("RC4")
@@ -70,7 +85,6 @@ object AniwaveUtils {
 }
 
 object CineZoneUtils {
-
     fun vrfEncrypt(input: String): String {
         val rc4Key = SecretKeySpec("Ij4aiaQXgluXQRs6".toByteArray(), "RC4")
         val cipher = Cipher.getInstance("RC4")

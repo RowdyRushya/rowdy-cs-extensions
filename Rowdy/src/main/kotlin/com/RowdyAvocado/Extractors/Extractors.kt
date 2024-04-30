@@ -32,7 +32,7 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
         Log.d("rowdy", data.toString())
         when (type) {
             Type.ANIME -> {
-                plugin.animeProviders.filter { it.enabled }.amap { provider ->
+                plugin.storage.animeProviders.filter { it.enabled }.amap { provider ->
                     when (provider.name) {
                         "Aniwave" -> {
                             aniwaveExtractor(
@@ -48,7 +48,7 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
                 }
             }
             Type.MEDIA -> {
-                plugin.mediaProviders.filter { it.enabled }.amap { provider ->
+                plugin.storage.mediaProviders.filter { it.enabled }.amap { provider ->
                     when (provider.name) {
                         "CineZone" -> {
                             cinezoneExtractor(
