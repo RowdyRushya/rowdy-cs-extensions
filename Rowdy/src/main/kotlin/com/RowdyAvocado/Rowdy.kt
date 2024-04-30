@@ -9,7 +9,7 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.syncproviders.SyncAPI
 import com.lagradost.cloudstream3.utils.*
 
-abstract class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
+abstract class Rowdy(open val plugin: RowdyPlugin) : MainAPI() {
     open override var lang = "en"
     open override val hasMainPage = true
     abstract val api: SyncAPI
@@ -92,10 +92,4 @@ abstract class MainAPI2(open val plugin: RowdyPlugin) : MainAPI() {
                 }
         return true
     }
-}
-
-enum class Type {
-    ANIME,
-    MEDIA,
-    NONE
 }

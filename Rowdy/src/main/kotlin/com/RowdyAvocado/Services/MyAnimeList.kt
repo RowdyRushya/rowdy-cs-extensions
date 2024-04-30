@@ -10,7 +10,7 @@ import com.lagradost.cloudstream3.syncproviders.providers.MALApi
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 
-class MyAnimeList(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
+class MyAnimeList(override val plugin: RowdyPlugin) : Rowdy(plugin) {
     override var name = "MyAnimeList"
     override var mainUrl = "https://myanimelist.net"
     override var supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)

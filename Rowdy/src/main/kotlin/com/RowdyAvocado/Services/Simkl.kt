@@ -11,7 +11,7 @@ import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi.Companion.getPosterUrl
 import com.lagradost.cloudstream3.utils.*
 
-class Simkl(override val plugin: RowdyPlugin) : MainAPI2(plugin) {
+class Simkl(override val plugin: RowdyPlugin) : Rowdy(plugin) {
     override var name = "Simkl"
     override var mainUrl = "https://simkl.com"
     override var supportedTypes = setOf(TvType.Movie, TvType.TvSeries)

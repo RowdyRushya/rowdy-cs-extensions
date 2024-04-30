@@ -55,8 +55,8 @@ class RowdyPlugin : Plugin() {
     private val mediaPrdList =
             listOf(
                     "CineZone" to "https://cinezone.to",
-                    "Superstream" to "https://www.superstream.to",
-                    "VidSrcTo" to "https://www.vidsrc.to"
+                    "VidsrcNet" to "https://vidsrc.net",
+                    "VidsrcTo" to "https://vidsrc.to",
             )
 
     private val animePrdList =

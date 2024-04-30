@@ -5,6 +5,7 @@ import android.util.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.Mp4Upload
 import com.lagradost.cloudstream3.extractors.Vidplay
@@ -58,6 +59,15 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
                                     callback
                             )
                         }
+                        "VidsrcNet" -> {
+                            vidsrcNetExtractor(
+                                    provider.name,
+                                    provider.domain,
+                                    data,
+                                    subtitleCallback,
+                                    callback
+                            )
+                        }
                         else -> {}
                     }
                 }
@@ -75,6 +85,8 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
         return ExtractorLink(serverName, serverName, link, referer, quality, link.contains(".m3u8"))
     }
 
+    // #region - Aniwave (https://aniwave.to) Extractor
+
     private suspend fun aniwaveExtractor(
             providerName: String?,
             url: String?,
@@ -90,23 +102,23 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
                         .document
         val id =
                 searchPage.selectFirst("div.poster")?.attr("data-tip")?.split("?/")?.get(0)
-                        ?: throw Error("Could not find anime id from search page")
+                        ?: throw Exception("Could not find anime id from search page")
         val seasonDataUrl = "$url/ajax/episode/list/$id?vrf=${AniwaveUtils.vrfEncrypt(id)}"
         val seasonData =
                 app.get(seasonDataUrl).parsedSafe<ApiResponseHTML>()?.html
-                        ?: throw Error("Could not fetch data for $seasonDataUrl")
+                        ?: throw Exception("Could not fetch data for $seasonDataUrl")
         val episodeIds =
                 Jsoup.parse(seasonData)
                         .body()
                         .select(".episodes > ul > li > a")
                         .find { it.attr("data-num").equals(episode.toString()) }
                         ?.attr("data-ids")
-                        ?: throw Error("Could not find episode IDs in response")
+                        ?: throw Exception("Could not find episode IDs in response")
         val episodeDataUrl =
                 "$url/ajax/server/list/$episodeIds?vrf=${AniwaveUtils.vrfEncrypt(episodeIds)}"
         val episodeData =
                 app.get(episodeDataUrl).parsedSafe<ApiResponseHTML>()?.html
-                        ?: throw Error("Could not fetch server data for $episodeDataUrl")
+                        ?: throw Exception("Could not fetch server data for $episodeDataUrl")
 
         Jsoup.parse(episodeData).body().select(".servers .type").amap {
             val dubType = it.attr("data-type")
@@ -117,7 +129,7 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
                 val serverRes = app.get(serverResUrl).parsedSafe<AniwaveResponseServer>()
                 val encUrl =
                         serverRes?.result?.url
-                                ?: throw Error("Could not fetch server url for $serverResUrl")
+                                ?: throw Exception("Could not fetch server url for $serverResUrl")
                 val decUrl = AniwaveUtils.vrfDecrypt(encUrl)
                 commonLinkLoader(
                         providerName,
@@ -130,6 +142,10 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
             }
         }
     }
+
+    // #endregion - Aniwave (https://aniwave.to) Extractor
+
+    // #region - CineZone (https://cinezone.to) Extractor
 
     private suspend fun cinezoneExtractor(
             providerName: String?,
@@ -145,11 +161,11 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
                         .document
         val id =
                 searchPage.selectFirst("div.tooltipBtn")?.attr("data-tip")?.split("?/")?.get(0)
-                        ?: throw Error("Could not find media id from search page")
+                        ?: throw Exception("Could not find media id from search page")
         val seasonDataUrl = "$url/ajax/episode/list/$id?vrf=${CineZoneUtils.vrfEncrypt(id)}"
         val seasonData =
                 app.get(seasonDataUrl).parsedSafe<ApiResponseHTML>()?.html
-                        ?: throw Error("Could not fetch data for $seasonDataUrl")
+                        ?: throw Exception("Could not fetch data for $seasonDataUrl")
         val episodeId =
                 Jsoup.parse(seasonData)
                         .body()
@@ -158,12 +174,12 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
                         ?.select("li a")
                         ?.find { it.attr("data-num").equals(data.episode?.toString() ?: "1") }
                         ?.attr("data-id")
-                        ?: throw Error("Could not find episode IDs in response")
+                        ?: throw Exception("Could not find episode IDs in response")
         val episodeDataUrl =
                 "$url/ajax/server/list/$episodeId?vrf=${CineZoneUtils.vrfEncrypt(episodeId)}"
         val episodeData =
                 app.get(episodeDataUrl).parsedSafe<ApiResponseHTML>()?.html
-                        ?: throw Error("Could not fetch server data for $episodeDataUrl")
+                        ?: throw Exception("Could not fetch server data for $episodeDataUrl")
 
         Jsoup.parse(episodeData).body().select(".server").amap {
             val serverId = it.attr("data-id")
@@ -172,7 +188,7 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
             val serverRes = app.get(serverResUrl).parsedSafe<AniwaveResponseServer>()
             val encUrl =
                     serverRes?.result?.url
-                            ?: throw Error("Could not fetch server url for $serverResUrl")
+                            ?: throw Exception("Could not fetch server url for $serverResUrl")
             val decUrl = CineZoneUtils.vrfDecrypt(encUrl)
             commonLinkLoader(
                     providerName,
@@ -184,11 +200,68 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
             )
         }
     }
+
+    // #endregion - CineZone (https://cinezone.to) Extractor
+
+    // #region - VidSrc (https://vidsrc.net) Extractor
+
+    private suspend fun vidsrcNetExtractor(
+            providerName: String?,
+            url: String?,
+            data: LinkData,
+            subtitleCallback: (SubtitleFile) -> Unit,
+            callback: (ExtractorLink) -> Unit
+    ) {
+        if (data.tmdbId.isNullOrEmpty()) return
+        val iFrameUrl =
+                if (data.season == null) {
+                    "$url/embed/movie?tmdb=${data.tmdbId}"
+                } else {
+                    "$url/embed/tv?tmdb=${data.tmdbId}&season=${data.season}&episode=${data.episode}"
+                }
+        val iframedoc = app.get(iFrameUrl).document
+        val serverhash =
+                iframedoc.selectFirst("div.serversList > div.server")?.attr("data-hash").toString()
+        val link = Extractvidsrcnetservers(serverhash)
+        val URI =
+                app.get(link, referer = "https://vidsrc.net/")
+                        .document
+                        .selectFirst("script:containsData(Playerjs)")
+                        ?.data()
+                        ?.substringAfter("file:\"#9")
+                        ?.substringBefore("\"")
+                        ?.replace(Regex("/@#@\\S+?=?="), "")
+                        ?.let { base64Decode(it) }
+                        .toString()
+        loadExtractor(URI, referer = "https://vidsrc.net/", subtitleCallback, callback)
+    }
+
+    suspend fun Extractvidsrcnetservers(url: String): String {
+        val rcp =
+                app.get(
+                                "https://vidsrc.stream/rcp/$url",
+                                referer = "https://vidsrc.net/",
+                                headers =
+                                        mapOf(
+                                                "User-Agent" to
+                                                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0"
+                                        )
+                        )
+                        .document
+        val link =
+                rcp.selectFirst("script:containsData(player_iframe)")
+                        ?.data()
+                        ?.substringAfter("src: '")
+                        ?.substringBefore("',")
+        return "http:$link"
+    }
+
+    // #endregion - VidSrc (https://vidsrc.net/) Extractor
 }
 
 private suspend fun commonLinkLoader(
         providerName: String?,
-        serverName: ServerName,
+        serverName: ServerName?,
         url: String,
         dubStatus: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -213,6 +286,8 @@ private suspend fun commonLinkLoader(
         }
     }
 }
+
+// #region - Custom Extractors
 
 class AnyFileMoon(provider: String?, dubType: String?, domain: String = "") : Filesim() {
     override val name =
@@ -255,3 +330,5 @@ class StreamWish : Filesim() {
     override val mainUrl = "https://awish.pro"
     override val requiresReferer = false
 }
+
+// #endregion - Custom Extractors
