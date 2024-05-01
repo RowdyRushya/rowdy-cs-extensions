@@ -1,7 +1,7 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-
+import android.util.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -83,6 +83,8 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
                 }
                 else -> {}
             }
-        } catch (e: Exception) {}
+        } catch (e: Exception) {
+            Log.d("ROWDY", e.message.toString())
+        }
     }
 }

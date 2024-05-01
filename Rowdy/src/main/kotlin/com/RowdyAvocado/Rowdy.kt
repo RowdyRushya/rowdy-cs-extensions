@@ -59,7 +59,7 @@ abstract class Rowdy(open val plugin: RowdyPlugin) : MainAPI() {
     // This load() only supports animes and for movies you can override this function
     open override suspend fun load(url: String): LoadResponse {
         val id = url.removeSuffix("/").substringAfterLast("/")
-        val data = api.getResult(id) ?: throw NotImplementedError("Unable to fetch show details")
+        val data = api.getResult(id) ?: throw ErrorLoadingException("Unable to fetch show details")
         var year = data.startDate?.div(1000)?.div(86400)?.div(365)?.plus(1970)?.toInt()
         val epCount = data.nextAiring?.episode?.minus(1) ?: data.totalEpisodes ?: 0
         val episodes =
