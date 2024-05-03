@@ -35,7 +35,7 @@ class Trakt(val plugin: RowdyPlugin) : TraktProvider() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        var mediaData = AppUtils.parseJson<LinkData>(data)
+        val mediaData = AppUtils.parseJson<LinkData>(data)
         type
                 .filter {
                     (mediaData.isAnime && it == Type.ANIME) ||

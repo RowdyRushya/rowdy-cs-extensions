@@ -4,6 +4,7 @@ package com.RowdyAvocado
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.metaproviders.TmdbLink
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
@@ -24,13 +25,23 @@ class Tmdb(val plugin: RowdyPlugin) : TmdbProvider() {
         return mapper.writeValueAsString(this)
     }
 
+    private fun TmdbLink.toLinkData(): LinkData {
+        return LinkData(
+                imdbId = imdbID,
+                tmdbId = tmdbID.toString(),
+                title = movieName,
+                season = season,
+                episode = episode
+        )
+    }
+
     override suspend fun loadLinks(
             data: String,
             isCasting: Boolean,
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val mediaData = AppUtils.parseJson<LinkData>(data)
+        val mediaData = AppUtils.parseJson<TmdbLink>(data).toLinkData()
         type
                 .filter {
                     (mediaData.isAnime && it == Type.ANIME) ||
