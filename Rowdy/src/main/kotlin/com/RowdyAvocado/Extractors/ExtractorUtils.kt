@@ -15,6 +15,7 @@ enum class ServerName {
     Streamtape,
     Vidplay,
     Filemoon,
+    Jeniusplay,
     Custom,
     NONE
 }

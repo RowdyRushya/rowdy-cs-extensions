@@ -10,12 +10,12 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.extractors.Filesim
+import com.lagradost.cloudstream3.extractors.Jeniusplay
 import com.lagradost.cloudstream3.extractors.Mp4Upload
 import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getAndUnpack
@@ -30,6 +30,7 @@ import org.jsoup.Jsoup
 
 object RowdyContentExtractors {
 
+    // #region - Main Link Handler
     suspend fun commonLinkLoader(
             providerName: String?,
             serverName: ServerName?,
@@ -37,7 +38,9 @@ object RowdyContentExtractors {
             referer: String?,
             dubStatus: String?,
             subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
+            callback: (ExtractorLink) -> Unit,
+            quality: Qualities = Qualities.Unknown,
+            isM3u8: Boolean = false
     ) {
         val domain = referer ?: CommonUtils.getBaseUrl(url)
         when (serverName) {
@@ -53,31 +56,28 @@ object RowdyContentExtractors {
             ServerName.Mp4upload ->
                     AnyMp4Upload(providerName, dubStatus, domain)
                             .getUrl(url, domain, subtitleCallback, callback)
+            ServerName.Jeniusplay -> {
+                AnyJeniusplay(providerName, dubStatus, domain)
+                        .getUrl(url, domain, subtitleCallback, callback)
+            }
             ServerName.Custom -> {
-                loadExtractor(url, referer, subtitleCallback) { link ->
-                    callback.invoke(
-                            ExtractorLink(
-                                    providerName ?: link.source,
-                                    providerName ?: link.name,
-                                    link.url,
-                                    link.referer,
-                                    when {
-                                        link.name == "VidSrc" -> Qualities.P1080.value
-                                        link.type == ExtractorLinkType.M3U8 -> link.quality
-                                        else -> link.quality
-                                    },
-                                    link.type,
-                                    link.headers,
-                                    link.extractorData
-                            )
-                    )
-                }
+                callback.invoke(
+                        ExtractorLink(
+                                providerName ?: return,
+                                providerName,
+                                url,
+                                domain,
+                                quality.value,
+                                isM3u8
+                        )
+                )
             }
             else -> {
                 loadExtractor(url, subtitleCallback, callback)
             }
         }
     }
+    // #endregion - Main Link Handler
 
     // #region - Aniwave (https://aniwave.to) Extractor
 
@@ -450,15 +450,16 @@ object RowdyContentExtractors {
             if (iframe.startsWith("https://closeload.top")) {
                 val unpacked = getAndUnpack(app.get(iframe, referer = "$url/").text)
                 val video = Regex("=\"(aHR.*?)\";").find(unpacked)?.groupValues?.get(1)
-                callback.invoke(
-                        ExtractorLink(
-                                "Ridomovies",
-                                "Ridomovies",
-                                base64Decode(video ?: return@apmap),
-                                "${CommonUtils.getBaseUrl(iframe)}/",
-                                Qualities.P1080.value,
-                                isM3u8 = true
-                        )
+                commonLinkLoader(
+                        providerName,
+                        ServerName.Custom,
+                        base64Decode(video ?: return@apmap),
+                        CommonUtils.getBaseUrl(iframe),
+                        null,
+                        subtitleCallback,
+                        callback,
+                        Qualities.P1080,
+                        true
                 )
             } else {
                 loadExtractor(iframe, "$url/", subtitleCallback, callback)
@@ -476,16 +477,18 @@ object RowdyContentExtractors {
             callback: (ExtractorLink) -> Unit
     ) {
         val fixTitle = CommonUtils.createSlug(data.title)
-        val url =
+        val mediaUrl =
                 if (data.season == null) {
                     "$url/movie/$fixTitle-${data.year}"
                 } else {
                     "$url/episode/$fixTitle-season-${data.season}-episode-${data.episode}"
                 }
-        invokeWpmovies(providerName, url, data, subtitleCallback, callback, encrypt = true)
+        wpMoviesExtractor(providerName, mediaUrl, data, subtitleCallback, callback, encrypt = true)
     }
+    // #endregion - ZShow (https://tv.idlixofficial.co) Extractor
 
-    private suspend fun invokeWpmovies(
+    // #region - Wpmovies () Extractor
+    private suspend fun wpMoviesExtractor(
             providerName: String?,
             url: String?,
             data: LinkData,
@@ -557,9 +560,9 @@ object RowdyContentExtractors {
                         !source.contains("youtube") -> {
                             commonLinkLoader(
                                     providerName,
-                                    ServerName.Custom,
+                                    ServerName.Jeniusplay,
                                     source,
-                                    referer,
+                                    null,
                                     null,
                                     subtitleCallback,
                                     callback
@@ -568,7 +571,7 @@ object RowdyContentExtractors {
                     }
                 }
     }
-    // #endregion - ZShow (https://tv.idlixofficial.co) Extractor
+    // #endregion - Wpmovies () Extractor
 }
 
 // #region - Custom Extractors
@@ -604,6 +607,15 @@ class AnyMp4Upload(provider: String?, dubType: String?, domain: String = "") : M
     override var name =
             (if (provider != null) "$provider: " else "") +
                     "Mp4Upload" +
+                    (if (dubType != null) ": $dubType" else "")
+    override var mainUrl = domain
+    override val requiresReferer = false
+}
+
+class AnyJeniusplay(provider: String?, dubType: String?, domain: String = "") : Jeniusplay() {
+    override var name =
+            (if (provider != null) "$provider: " else "") +
+                    "JeniusPlay" +
                     (if (dubType != null) ": $dubType" else "")
     override var mainUrl = domain
     override val requiresReferer = false

@@ -4,7 +4,7 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 }
 // use an integer for version numbers
-version = 17
+version = 18
 
 cloudstream {
     description = "One stop solution for all of your media need."
