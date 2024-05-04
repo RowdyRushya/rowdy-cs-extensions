@@ -1,11 +1,11 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-
+import android.util.Log
+import com.RowdyAvocado.LinkData as ThisLinkData
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
-import com.lagradost.cloudstream3.metaproviders.TraktProvider.LinkData
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
 
@@ -35,7 +35,8 @@ class Trakt(val plugin: RowdyPlugin) : TraktProvider() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val mediaData = AppUtils.parseJson<LinkData>(data)
+        val mediaData = AppUtils.parseJson<ThisLinkData>(data.replace("\"id\"", "\"tmdbId\""))
+        Log.d("rowdy", mediaData.toString())
         type
                 .filter {
                     (mediaData.isAnime && it == Type.ANIME) ||
