@@ -16,7 +16,6 @@ import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -39,7 +38,7 @@ object RowdyContentExtractors {
             dubStatus: String?,
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit,
-            quality: Qualities = Qualities.Unknown,
+            quality: Int = Qualities.Unknown.value,
             isM3u8: Boolean = false
     ) {
         val domain = referer ?: CommonUtils.getBaseUrl(url)
@@ -67,7 +66,7 @@ object RowdyContentExtractors {
                                 providerName,
                                 url,
                                 domain,
-                                quality.value,
+                                quality,
                                 isM3u8
                         )
                 )
@@ -320,6 +319,7 @@ object RowdyContentExtractors {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
+        // TO-DO: Fix Mirrors (for reference Avengers: Infinity War: Trakt)
         data.tmdbId ?: return
         val id =
                 (if (data.season == null) {
@@ -357,16 +357,18 @@ object RowdyContentExtractors {
             val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script)?.groupValues?.getOrNull(1)
             // not sure why this line messes with loading
             // if (CommonUtils.haveDub(m3u8 ?: return@apmap, "$host/") == false) return@apmap
-            callback.invoke(
-                    ExtractorLink(
-                            providerName ?: "",
-                            "$providerName:${iframe.name}",
-                            m3u8 ?: return@apmap,
-                            "$host/",
-                            iframe.quality?.filter { it.isDigit() }?.toIntOrNull()
-                                    ?: Qualities.Unknown.value,
-                            INFER_TYPE
-                    )
+            m3u8 ?: return@apmap
+            val quality = iframe.quality?.filter { it.isDigit() }?.toIntOrNull()
+            commonLinkLoader(
+                    "$providerName:${iframe.name}",
+                    ServerName.Custom,
+                    m3u8,
+                    "$host/",
+                    null,
+                    subtitleCallback,
+                    callback,
+                    quality ?: Qualities.Unknown.value,
+                    true
             )
         }
     }
@@ -458,7 +460,7 @@ object RowdyContentExtractors {
                         null,
                         subtitleCallback,
                         callback,
-                        Qualities.P1080,
+                        Qualities.P1080.value,
                         true
                 )
             } else {
