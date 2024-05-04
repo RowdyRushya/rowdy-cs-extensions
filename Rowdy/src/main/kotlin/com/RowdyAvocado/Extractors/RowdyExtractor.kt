@@ -77,6 +77,24 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
                                         callback
                                 )
                             }
+                            "Ridomovies" -> {
+                                RowdyContentExtractors.ridoMoviesExtractor(
+                                        provider.name,
+                                        provider.domain,
+                                        data,
+                                        subtitleCallback,
+                                        callback
+                                )
+                            }
+                            "ZShow" -> {
+                                RowdyContentExtractors.zshowExtractor(
+                                        provider.name,
+                                        provider.domain,
+                                        data,
+                                        subtitleCallback,
+                                        callback
+                                )
+                            }
                             else -> {}
                         }
                     }

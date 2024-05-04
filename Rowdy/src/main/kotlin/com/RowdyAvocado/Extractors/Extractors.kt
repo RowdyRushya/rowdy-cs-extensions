@@ -12,7 +12,10 @@ import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.Mp4Upload
 import com.lagradost.cloudstream3.extractors.Vidplay
+import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getAndUnpack
@@ -21,6 +24,8 @@ import java.net.URI
 import java.net.URLDecoder
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
+import kotlinx.coroutines.delay
+import okhttp3.Interceptor
 import org.jsoup.Jsoup
 
 object RowdyContentExtractors {
@@ -29,11 +34,12 @@ object RowdyContentExtractors {
             providerName: String?,
             serverName: ServerName?,
             url: String,
+            referer: String?,
             dubStatus: String?,
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        val domain = CommonUtils.getBaseUrl(url)
+        val domain = referer ?: CommonUtils.getBaseUrl(url)
         when (serverName) {
             ServerName.Vidplay ->
                     AnyVidplay(providerName, dubStatus, domain)
@@ -47,6 +53,26 @@ object RowdyContentExtractors {
             ServerName.Mp4upload ->
                     AnyMp4Upload(providerName, dubStatus, domain)
                             .getUrl(url, domain, subtitleCallback, callback)
+            ServerName.Custom -> {
+                loadExtractor(url, referer, subtitleCallback) { link ->
+                    callback.invoke(
+                            ExtractorLink(
+                                    providerName ?: link.source,
+                                    providerName ?: link.name,
+                                    link.url,
+                                    link.referer,
+                                    when {
+                                        link.name == "VidSrc" -> Qualities.P1080.value
+                                        link.type == ExtractorLinkType.M3U8 -> link.quality
+                                        else -> link.quality
+                                    },
+                                    link.type,
+                                    link.headers,
+                                    link.extractorData
+                            )
+                    )
+                }
+            }
             else -> {
                 loadExtractor(url, subtitleCallback, callback)
             }
@@ -98,6 +124,7 @@ object RowdyContentExtractors {
                         AniwaveUtils.serverName(serverId),
                         decUrl,
                         dubType,
+                        null,
                         subtitleCallback,
                         callback
                 )
@@ -151,6 +178,7 @@ object RowdyContentExtractors {
                     CineZoneUtils.serverName(serverId),
                     decUrl,
                     null,
+                    null,
                     subtitleCallback,
                     callback
             )
@@ -168,7 +196,7 @@ object RowdyContentExtractors {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        if (data.tmdbId.isNullOrEmpty()) return
+        data.tmdbId ?: return
         val iFrameUrl =
                 if (data.season == null) {
                     "$url/embed/movie?tmdb=${data.tmdbId}"
@@ -247,6 +275,7 @@ object RowdyContentExtractors {
                         VidsrcToUtils.serverName(source.title),
                         finalUrl,
                         null,
+                        null,
                         subtitleCallback,
                         callback
                 )
@@ -291,7 +320,7 @@ object RowdyContentExtractors {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        if (data.tmdbId.isNullOrEmpty()) return
+        data.tmdbId ?: return
         val id =
                 (if (data.season == null) {
                             "tmdb|movie|${data.tmdbId}"
@@ -360,6 +389,186 @@ object RowdyContentExtractors {
     }
 
     // #endregion - Moflix (https://myfilestorage.xyz) Extractor
+
+    // #region - Ridomovies (https://ridomovies.tv) Extractor
+    suspend fun ridoMoviesExtractor(
+            providerName: String?,
+            url: String?,
+            data: LinkData,
+            subtitleCallback: (SubtitleFile) -> Unit,
+            callback: (ExtractorLink) -> Unit
+    ) {
+        // #region - Ridomovies - necessary data classes
+        data class RidoContentable(
+                @JsonProperty("imdbId") var imdbId: String? = null,
+                @JsonProperty("tmdbId") var tmdbId: Int? = null,
+        )
+
+        data class RidoItems(
+                @JsonProperty("slug") var slug: String? = null,
+                @JsonProperty("contentable") var contentable: RidoContentable? = null,
+        )
+
+        data class RidoData(
+                @JsonProperty("url") var url: String? = null,
+                @JsonProperty("items") var items: ArrayList<RidoItems>? = arrayListOf(),
+        )
+
+        data class RidoSearch(
+                @JsonProperty("data") var data: RidoData? = null,
+        )
+
+        data class RidoResponses(
+                @JsonProperty("data") var data: ArrayList<RidoData>? = arrayListOf(),
+        )
+        // #endregion - Ridomovies - necessary data classes
+
+        val id = data.imdbId ?: data.tmdbId ?: return
+        val mediaSlug =
+                app.get("$url/core/api/search?q=$id")
+                        .parsedSafe<RidoSearch>()
+                        ?.data
+                        ?.items
+                        ?.find {
+                            it.contentable?.tmdbId == data.tmdbId ||
+                                    it.contentable?.imdbId == data.imdbId
+                        }
+                        ?.slug
+                        ?: return
+
+        val mediaId =
+                data.season?.let {
+                    val episodeUrl = "$url/tv/$mediaSlug/season-$it/episode-${data.episode}"
+                    app.get(episodeUrl).text.substringAfterLast("postid").substringBefore("\\")
+                }
+                        ?: mediaSlug
+
+        val mediaUrl =
+                "$url/core/api/${if (data.season == null) "movies" else "episodes"}/$mediaId/videos"
+        app.get(mediaUrl).parsedSafe<RidoResponses>()?.data?.apmap { link ->
+            val iframe = Jsoup.parse(link.url ?: return@apmap).select("iframe").attr("data-src")
+            if (iframe.startsWith("https://closeload.top")) {
+                val unpacked = getAndUnpack(app.get(iframe, referer = "$url/").text)
+                val video = Regex("=\"(aHR.*?)\";").find(unpacked)?.groupValues?.get(1)
+                callback.invoke(
+                        ExtractorLink(
+                                "Ridomovies",
+                                "Ridomovies",
+                                base64Decode(video ?: return@apmap),
+                                "${CommonUtils.getBaseUrl(iframe)}/",
+                                Qualities.P1080.value,
+                                isM3u8 = true
+                        )
+                )
+            } else {
+                loadExtractor(iframe, "$url/", subtitleCallback, callback)
+            }
+        }
+    }
+    // #endregion - Ridomovies (https://myfilestorage.xyz) Extractor
+
+    // #region - ZShow (https://tv.idlixofficial.co) Extractor
+    suspend fun zshowExtractor(
+            providerName: String?,
+            url: String?,
+            data: LinkData,
+            subtitleCallback: (SubtitleFile) -> Unit,
+            callback: (ExtractorLink) -> Unit
+    ) {
+        val fixTitle = CommonUtils.createSlug(data.title)
+        val url =
+                if (data.season == null) {
+                    "$url/movie/$fixTitle-${data.year}"
+                } else {
+                    "$url/episode/$fixTitle-season-${data.season}-episode-${data.episode}"
+                }
+        invokeWpmovies(providerName, url, data, subtitleCallback, callback, encrypt = true)
+    }
+
+    private suspend fun invokeWpmovies(
+            providerName: String?,
+            url: String?,
+            data: LinkData,
+            subtitleCallback: (SubtitleFile) -> Unit,
+            callback: (ExtractorLink) -> Unit,
+            fixIframe: Boolean = false,
+            encrypt: Boolean = false,
+            hasCloudflare: Boolean = false,
+            interceptor: Interceptor? = null,
+    ) {
+        data class ResponseHash(
+                @JsonProperty("embed_url") val embed_url: String,
+                @JsonProperty("key") val key: String? = null,
+                @JsonProperty("type") val type: String? = null,
+        )
+
+        data class ZShowEmbed(
+                @JsonProperty("m") val meta: String? = null,
+        )
+
+        fun String.fixBloat(): String {
+            return this.replace("\"", "").replace("\\", "")
+        }
+
+        val res = app.get(url ?: return, interceptor = if (hasCloudflare) interceptor else null)
+        val referer = CommonUtils.getBaseUrl(res.url)
+        val document = res.document
+        document.select("ul#playeroptionsul > li")
+                .map { Triple(it.attr("data-post"), it.attr("data-nume"), it.attr("data-type")) }
+                .apmap { (id, nume, type) ->
+                    delay(1000)
+                    val json =
+                            app.post(
+                                    url = "$referer/wp-admin/admin-ajax.php",
+                                    data =
+                                            mapOf(
+                                                    "action" to "doo_player_ajax",
+                                                    "post" to id,
+                                                    "nume" to nume,
+                                                    "type" to type
+                                            ),
+                                    headers =
+                                            mapOf(
+                                                    "Accept" to "*/*",
+                                                    "X-Requested-With" to "XMLHttpRequest"
+                                            ),
+                                    referer = url,
+                                    interceptor = if (hasCloudflare) interceptor else null
+                            )
+                    val source =
+                            tryParseJson<ResponseHash>(json.text)?.let {
+                                when {
+                                    encrypt -> {
+                                        val meta =
+                                                tryParseJson<ZShowEmbed>(it.embed_url)?.meta
+                                                        ?: return@apmap
+                                        val key =
+                                                WpUtils.generateWpKey(it.key ?: return@apmap, meta)
+                                        cryptoAESHandler(it.embed_url, key.toByteArray(), false)
+                                                ?.fixBloat()
+                                    }
+                                    fixIframe ->
+                                            Jsoup.parse(it.embed_url).select("IFRAME").attr("SRC")
+                                    else -> it.embed_url
+                                }
+                            }
+                                    ?: return@apmap
+                    when {
+                        !source.contains("youtube") -> {
+                            commonLinkLoader(
+                                    providerName,
+                                    ServerName.Custom,
+                                    source,
+                                    referer,
+                                    null,
+                                    subtitleCallback,
+                                    callback
+                            )
+                        }
+                    }
+                }
+    }
+    // #endregion - ZShow (https://tv.idlixofficial.co) Extractor
 }
 
 // #region - Custom Extractors

@@ -75,7 +75,7 @@ object StorageManager {
             providers.forEach {
                 val oldProvider = storedProviders.find { p -> p.name.equals(it.first) }
                 if (oldProvider == null) {
-                    newProviderList += Provider(it.first, it.second, false, false)
+                    newProviderList += Provider(it.first, it.second, true, false)
                 } else {
                     val domain = if (oldProvider.userModified) oldProvider.domain else it.second
                     newProviderList +=

@@ -19,7 +19,7 @@ data class LinkData(
         @JsonProperty("simklId") val simklId: Int? = null,
         @JsonProperty("traktId") val traktId: Int? = null,
         @JsonProperty("imdbId") val imdbId: String? = null,
-        @JsonProperty("tmdbId") val tmdbId: String? = null,
+        @JsonProperty("tmdbId") val tmdbId: Int? = null,
         @JsonProperty("tvdbId") val tvdbId: Int? = null,
         @JsonProperty("type") val type: String? = null,
         @JsonProperty("season") val season: Int? = null,

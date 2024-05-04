@@ -3,6 +3,7 @@ package com.RowdyAvocado
 import android.util.Base64
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
 import java.net.URI
 import java.net.URLDecoder
 import javax.crypto.Cipher
@@ -14,6 +15,7 @@ enum class ServerName {
     Streamtape,
     Vidplay,
     Filemoon,
+    Custom,
     NONE
 }
 
@@ -25,6 +27,8 @@ object RowdyExtractorUtil {
                     "VidsrcNet" to "https://vidsrc.net",
                     "VidsrcTo" to "https://vidsrc.to",
                     "Moflix" to "https://moflix-stream.xyz",
+                    "Ridomovies" to "https://ridomovies.tv",
+                    "ZShow" to "https://tv.idlixofficial.co",
             )
 
     val animePrdList =
@@ -35,6 +39,7 @@ object RowdyExtractorUtil {
             )
 }
 
+@OptIn(kotlin.ExperimentalStdlibApi::class)
 object CommonUtils {
     fun getBaseUrl(url: String): String {
         return URI(url).let { "${it.scheme}://${it.host}" }
@@ -42,6 +47,14 @@ object CommonUtils {
 
     suspend fun haveDub(url: String, referer: String): Boolean {
         return app.get(url, referer = referer).text.contains("TYPE=AUDIO")
+    }
+
+    fun createSlug(data: String?): String? {
+        return data
+                ?.filter { it.isWhitespace() || it.isLetterOrDigit() }
+                ?.trim()
+                ?.replace("\\s+".toRegex(), "-")
+                ?.lowercase()
     }
 }
 
@@ -175,6 +188,18 @@ object VidsrcToUtils {
             "Filemoon" -> return ServerName.Filemoon
         }
         return ServerName.NONE
+    }
+}
+
+object WpUtils {
+    fun generateWpKey(r: String, m: String): String {
+        val rList = r.split("\\x").toTypedArray()
+        var n = ""
+        val decodedM = String(base64Decode(m.split("").reversed().joinToString("")).toCharArray())
+        for (s in decodedM.split("|")) {
+            n += "\\x" + rList[Integer.parseInt(s) + 1]
+        }
+        return n
     }
 }
 

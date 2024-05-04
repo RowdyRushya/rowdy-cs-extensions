@@ -28,7 +28,7 @@ class Tmdb(val plugin: RowdyPlugin) : TmdbProvider() {
     private fun TmdbLink.toLinkData(): LinkData {
         return LinkData(
                 imdbId = imdbID,
-                tmdbId = tmdbID.toString(),
+                tmdbId = tmdbID,
                 title = movieName,
                 season = season,
                 episode = episode
