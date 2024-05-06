@@ -33,6 +33,8 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
     private var param1: String? = null
     private var param2: String? = null
 
+    private val resources = plugin.resources ?: throw Exception("Unable to read resources")
+
     private var mediaProviders: Array<Provider> = plugin.storage.mediaProviders
     private var animeProviders: Array<Provider> = plugin.storage.animeProviders
 
@@ -46,19 +48,24 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
 
     // #region - necessary functions
     private fun getDrawable(name: String): Drawable? {
-        val id =
-                plugin.resources!!.getIdentifier(name, "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
-        return ResourcesCompat.getDrawable(plugin.resources!!, id, null)
+        val id = resources.getIdentifier(name, "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        return ResourcesCompat.getDrawable(resources, id, null)
     }
 
     private fun getString(name: String): String? {
-        val id = plugin.resources!!.getIdentifier(name, "string", BuildConfig.LIBRARY_PACKAGE_NAME)
-        return plugin.resources!!.getString(id)
+        val id = resources.getIdentifier(name, "string", BuildConfig.LIBRARY_PACKAGE_NAME)
+        return resources.getString(id)
     }
 
     private fun <T : View> View.findView(name: String): T {
-        val id = plugin.resources!!.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
+        val id = resources.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
         return this.findViewById(id)
+    }
+
+    private fun View.makeTvCompatible() {
+        val outlineId =
+                resources.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        this.makeTvCompatible()
     }
     // #endregion - necessary functions
 
@@ -70,55 +77,25 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
 
         // #region - collecting required resources
         val settingsLayoutId =
-                plugin.resources!!.getIdentifier(
-                        "settings",
-                        "layout",
-                        BuildConfig.LIBRARY_PACKAGE_NAME
-                )
-        val settingsLayout = plugin.resources!!.getLayout(settingsLayoutId)
+                resources.getIdentifier("settings", "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
+        val settingsLayout = resources.getLayout(settingsLayoutId)
         val settings = inflater.inflate(settingsLayout, container, false)
-        val outlineId =
-                plugin.resources!!.getIdentifier(
-                        "outline",
-                        "drawable",
-                        BuildConfig.LIBRARY_PACKAGE_NAME
-                )
         val providerLayoutId =
-                plugin.resources!!.getIdentifier(
-                        "provider",
-                        "layout",
-                        BuildConfig.LIBRARY_PACKAGE_NAME
-                )
+                resources.getIdentifier("provider", "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
         val saveIconId =
-                plugin.resources!!.getIdentifier(
-                        "save_icon",
-                        "drawable",
-                        BuildConfig.LIBRARY_PACKAGE_NAME
-                )
+                resources.getIdentifier("save_icon", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
         val deleteIconId =
-                plugin.resources!!.getIdentifier(
-                        "delete_icon",
-                        "drawable",
-                        BuildConfig.LIBRARY_PACKAGE_NAME
-                )
+                resources.getIdentifier("delete_icon", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
         val editIconId =
-                plugin.resources!!.getIdentifier(
-                        "edit_icon",
-                        "drawable",
-                        BuildConfig.LIBRARY_PACKAGE_NAME
-                )
+                resources.getIdentifier("edit_icon", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
         val resetIconId =
-                plugin.resources!!.getIdentifier(
-                        "reset_icon",
-                        "drawable",
-                        BuildConfig.LIBRARY_PACKAGE_NAME
-                )
+                resources.getIdentifier("reset_icon", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
         // #endregion - collecting required resources
 
         // #region - building save button and its click listener
         val saveBtn = settings.findView<ImageView>("save")
-        saveBtn.setImageDrawable(plugin.resources!!.getDrawable(saveIconId, null))
-        saveBtn.background = plugin.resources!!.getDrawable(outlineId, null)
+        saveBtn.setImageDrawable(resources.getDrawable(saveIconId, null))
+        saveBtn.makeTvCompatible()
         saveBtn.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
@@ -131,7 +108,8 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
         // #endregion - building save button and its click listener
 
         // #region - building delete button and its alert as well as its click listener
-        val alertBuilder = AlertDialog.Builder(context!!)
+        val alertBuilder =
+                AlertDialog.Builder(context ?: throw Exception("Unable to read resources"))
         val dialogClickListener =
                 DialogInterface.OnClickListener { _, which ->
                     when (which) {
@@ -145,8 +123,8 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                     }
                 }
         val deleteBtn = settings.findView<ImageView>("delete")
-        deleteBtn.setImageDrawable(plugin.resources!!.getDrawable(deleteIconId, null))
-        deleteBtn.background = plugin.resources!!.getDrawable(outlineId, null)
+        deleteBtn.setImageDrawable(resources.getDrawable(deleteIconId, null))
+        deleteBtn.makeTvCompatible()
         deleteBtn.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
@@ -164,7 +142,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
 
         // #region - building Anime Sync Switch with its click listener
         val mediaSyncSwitch = settings.findView<Switch>("media_sync")
-        mediaSyncSwitch.background = plugin.resources!!.getDrawable(outlineId, null)
+        mediaSyncSwitch.makeTvCompatible()
         val mediaPrdConfig = settings.findView<LinearLayout>("media_providers_config")
         val mediaSyncRadioGroup = settings.findView<RadioGroup>("media_sync_group")
 
@@ -188,11 +166,11 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
 
         // #region - building Media Sync Services List with its click listener
         val simklRadio = settings.findView<RadioButton>("simkl")
-        simklRadio.background = plugin.resources!!.getDrawable(outlineId, null)
+        simklRadio.makeTvCompatible()
         val tmdbRadio = settings.findView<RadioButton>("tmdb")
-        tmdbRadio.background = plugin.resources!!.getDrawable(outlineId, null)
+        tmdbRadio.makeTvCompatible()
         val traktRadio = settings.findView<RadioButton>("trakt")
-        traktRadio.background = plugin.resources!!.getDrawable(outlineId, null)
+        traktRadio.makeTvCompatible()
         simklRadio.isChecked = plugin.storage.mediaService.equals("Simkl")
         tmdbRadio.isChecked = plugin.storage.mediaService.equals("Tmdb")
         traktRadio.isChecked = plugin.storage.mediaService.equals("Trakt")
@@ -222,7 +200,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
 
         // #region - building Anime Sync Switch with its click listener
         val animeSyncSwitch = settings.findView<Switch>("anime_sync")
-        animeSyncSwitch.background = plugin.resources!!.getDrawable(outlineId, null)
+        animeSyncSwitch.makeTvCompatible()
         val animePrdConfig = settings.findView<LinearLayout>("anime_providers_config")
         val animeSyncRadioGroup = settings.findView<RadioGroup>("anime_sync_group")
         animePrdConfig.visibility = if (plugin.storage.isAnimeService) View.VISIBLE else View.GONE
@@ -244,9 +222,9 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
 
         // #region - building Anime Sync Services List with its click listener
         val anilistRadio = settings.findView<RadioButton>("anilist")
-        anilistRadio.background = plugin.resources!!.getDrawable(outlineId, null)
+        anilistRadio.makeTvCompatible()
         val malRadio = settings.findView<RadioButton>("mal")
-        malRadio.background = plugin.resources!!.getDrawable(outlineId, null)
+        malRadio.makeTvCompatible()
         anilistRadio.isChecked = plugin.storage.animeService.equals("Anilist")
         malRadio.isChecked = plugin.storage.animeService.equals("MyAnimeList")
 
@@ -268,7 +246,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
 
         // #region - building Media Providers List with its click listener
         val mediaProvidersListTitle = settings.findView<TextView>("media_providers_list_title")
-        mediaProvidersListTitle.background = plugin.resources!!.getDrawable(outlineId, null)
+        mediaProvidersListTitle.makeTvCompatible()
         val mediaProvidersList = settings.findView<LinearLayout>("media_providers_list")
 
         mediaProvidersListTitle.setOnClickListener(
@@ -289,7 +267,6 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                     buildProviderView(
                             provider,
                             providerLayoutId,
-                            outlineId,
                             editIconId,
                             resetIconId,
                             inflater,
@@ -302,7 +279,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
 
         // #region - building Anime Providers List with its click listener
         val animeProvidersListTitle = settings.findView<TextView>("anime_providers_list_title")
-        animeProvidersListTitle.background = plugin.resources!!.getDrawable(outlineId, null)
+        animeProvidersListTitle.makeTvCompatible()
         val animeProvidersList = settings.findView<LinearLayout>("anime_providers_list")
         animeProvidersListTitle.setOnClickListener(
                 object : OnClickListener {
@@ -322,7 +299,6 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                     buildProviderView(
                             provider,
                             providerLayoutId,
-                            outlineId,
                             editIconId,
                             resetIconId,
                             inflater,
@@ -342,7 +318,6 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
     fun buildProviderView(
             provider: Provider,
             providerLayoutId: Int,
-            outlineId: Int,
             editIconId: Int,
             resetIconId: Int,
             inflater: LayoutInflater,
@@ -351,17 +326,17 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
     ): View {
 
         // #region - collecting required resources and setting necessary details
-        val providerLayout = plugin.resources!!.getLayout(providerLayoutId)
+        val providerLayout = resources.getLayout(providerLayoutId)
         val providerView = inflater.inflate(providerLayout, container, false)
         val providerCheckBox = providerView.findView<CheckBox>("provider")
-        providerCheckBox.background = plugin.resources!!.getDrawable(outlineId, null)
+        providerCheckBox.makeTvCompatible()
 
         val domainEdit = providerView.findView<ImageView>("domain_edit")
-        domainEdit.setImageDrawable(plugin.resources!!.getDrawable(editIconId, null))
-        domainEdit.background = plugin.resources!!.getDrawable(outlineId, null)
+        domainEdit.setImageDrawable(resources.getDrawable(editIconId, null))
+        domainEdit.makeTvCompatible()
         val domainReset = providerView.findView<ImageView>("domain_reset")
-        domainReset.setImageDrawable(plugin.resources!!.getDrawable(resetIconId, null))
-        domainReset.background = plugin.resources!!.getDrawable(outlineId, null)
+        domainReset.setImageDrawable(resources.getDrawable(resetIconId, null))
+        domainReset.makeTvCompatible()
         // #endregion - collecting required resources and setting necessary details
 
         providerCheckBox.text = provider.name + if (provider.userModified) "*" else ""
