@@ -124,8 +124,8 @@ object RowdyContentExtractors {
                         providerName,
                         AniwaveUtils.serverName(serverId),
                         decUrl,
-                        dubType,
                         null,
+                        dubType,
                         subtitleCallback,
                         callback
                 )

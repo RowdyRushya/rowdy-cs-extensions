@@ -65,7 +65,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
     private fun View.makeTvCompatible() {
         val outlineId =
                 resources.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
-        this.makeTvCompatible()
+        this.background = resources.getDrawable(outlineId, null)
     }
     // #endregion - necessary functions
 
