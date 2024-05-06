@@ -2,6 +2,7 @@ package com.RowdyAvocado
 
 // import android.util.Log
 import android.util.Base64
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
@@ -16,10 +17,11 @@ import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getAndUnpack
+import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
-import java.net.URI
 import java.net.URLDecoder
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
@@ -188,6 +190,61 @@ object RowdyContentExtractors {
 
     // #region - VidSrcNet (https://vidsrc.net) Extractor
 
+    // suspend fun vidsrcNetExtractor(
+    //         providerName: String?,
+    //         url: String?,
+    //         data: LinkData,
+    //         subtitleCallback: (SubtitleFile) -> Unit,
+    //         callback: (ExtractorLink) -> Unit
+    // ) {
+    //     data.tmdbId ?: return
+    //     val iFrameUrl =
+    //             if (data.season == null) {
+    //                 "$url/embed/movie?tmdb=${data.tmdbId}"
+    //             } else {
+    //
+    // "$url/embed/tv?tmdb=${data.tmdbId}&season=${data.season}&episode=${data.episode}"
+    //             }
+    //     val iframedoc = app.get(iFrameUrl).document
+    //     val serverhash =
+    //             iframedoc.selectFirst("div.serversList > div.server")?.attr("data-hash") ?:
+    // return
+    //     val link = Extractvidsrcnetservers(serverhash) ?: return
+    //     val URI =
+    //             app.get(link, referer = "https://vidsrc.net/")
+    //                     .document
+    //                     .selectFirst("script:containsData(Playerjs)")
+    //                     ?.data()
+    //                     ?.substringAfter("file:\"#9")
+    //                     ?.substringBefore("\"")
+    //                     ?.replace(Regex("/@#@\\S+?=?="), "")
+    //                     ?.let { base64Decode(it) }
+    //                     ?: return
+    //     loadExtractor(URI, referer = "https://vidsrc.net/", subtitleCallback, callback)
+    // }
+
+    // suspend fun Extractvidsrcnetservers(url: String): String? {
+    //     val rcp =
+    //             app.get(
+    //                             "https://vidsrc.stream/rcp/$url",
+    //                             referer = "https://vidsrc.net/",
+    //                             headers =
+    //                                     mapOf(
+    //                                             "User-Agent" to
+    //                                                     "Mozilla/5.0 (Windows NT 10.0; Win64;
+    // x64; rv:101.0) Gecko/20100101 Firefox/101.0"
+    //                                     )
+    //                     )
+    //                     .document
+    //     val link =
+    //             rcp.selectFirst("script:containsData(player_iframe)")
+    //                     ?.data()
+    //                     ?.substringAfter("src: '")
+    //                     ?.substringBefore("',")
+    //                     ?: return null
+    //     return "http:$link"
+    // }
+
     suspend fun vidsrcNetExtractor(
             providerName: String?,
             url: String?,
@@ -196,48 +253,47 @@ object RowdyContentExtractors {
             callback: (ExtractorLink) -> Unit
     ) {
         data.tmdbId ?: return
-        val iFrameUrl =
+        val mediaUrl =
                 if (data.season == null) {
                     "$url/embed/movie?tmdb=${data.tmdbId}"
                 } else {
                     "$url/embed/tv?tmdb=${data.tmdbId}&season=${data.season}&episode=${data.episode}"
                 }
-        val iframedoc = app.get(iFrameUrl).document
-        val serverhash =
-                iframedoc.selectFirst("div.serversList > div.server")?.attr("data-hash") ?: return
-        val link = Extractvidsrcnetservers(serverhash) ?: return
-        val URI =
-                app.get(link, referer = "https://vidsrc.net/")
+        Log.d("rowdy mediaUrl", mediaUrl)
+        val iframedoc =
+                app.get(mediaUrl).document.select("iframe#player_iframe").attr("src").let {
+                    httpsify(it)
+                }
+        Log.d("rowdy iframedoc", iframedoc)
+        val doc = app.get(iframedoc, referer = mediaUrl).document
+        Log.d("rowdy doc", doc.toString())
+        val index = doc.select("body").attr("data-i")
+        val hash = doc.select("div#hidden").attr("data-h")
+        val srcrcp = CommonUtils.deobfstr(hash, index)
+        Log.d("rowdy index and hash", index + " : " + hash)
+        Log.d("rowdy srcrcp", srcrcp)
+        val script =
+                app.get(httpsify(srcrcp), referer = iframedoc)
                         .document
                         .selectFirst("script:containsData(Playerjs)")
                         ?.data()
-                        ?.substringAfter("file:\"#9")
+        val video =
+                script?.substringAfter("file:\"#9")
                         ?.substringBefore("\"")
                         ?.replace(Regex("/@#@\\S+?=?="), "")
                         ?.let { base64Decode(it) }
-                        ?: return
-        loadExtractor(URI, referer = "https://vidsrc.net/", subtitleCallback, callback)
-    }
 
-    suspend fun Extractvidsrcnetservers(url: String): String? {
-        val rcp =
-                app.get(
-                                "https://vidsrc.stream/rcp/$url",
-                                referer = "https://vidsrc.net/",
-                                headers =
-                                        mapOf(
-                                                "User-Agent" to
-                                                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0"
-                                        )
-                        )
-                        .document
-        val link =
-                rcp.selectFirst("script:containsData(player_iframe)")
-                        ?.data()
-                        ?.substringAfter("src: '")
-                        ?.substringBefore("',")
-                        ?: return null
-        return "http:$link"
+        Log.d("rowdy video", video ?: "")
+        callback.invoke(
+                ExtractorLink(
+                        "Vidsrc",
+                        "Vidsrc",
+                        video ?: return,
+                        "https://vidsrc.stream/",
+                        Qualities.P1080.value,
+                        INFER_TYPE
+                )
+        )
     }
 
     // #endregion - VidSrcNet (https://vidsrc.net/) Extractor

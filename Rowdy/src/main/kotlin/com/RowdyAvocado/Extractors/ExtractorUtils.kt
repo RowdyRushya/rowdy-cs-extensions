@@ -57,6 +57,15 @@ object CommonUtils {
                 ?.replace("\\s+".toRegex(), "-")
                 ?.lowercase()
     }
+
+    fun deobfstr(hash: String, index: String): String {
+        var result = ""
+        for (i in hash.indices step 2) {
+            val j = hash.substring(i, i + 2)
+            result += (j.toInt(16) xor index[(i / 2) % index.length].code).toChar()
+        }
+        return result
+    }
 }
 
 object AniwaveUtils {
