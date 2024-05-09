@@ -1,6 +1,8 @@
 package com.RowdyAvocado
 
+// import android.util.Log
 import android.content.DialogInterface
+import android.content.res.Resources
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
@@ -21,7 +23,6 @@ import android.widget.Switch
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.res.ResourcesCompat
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.utils.AppUtils.setDefaultFocus
@@ -33,7 +34,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
     private var param1: String? = null
     private var param2: String? = null
 
-    private val resources = plugin.resources ?: throw Exception("Unable to read resources")
+    private val res: Resources = plugin.resources ?: throw Exception("Unable to read resources")
 
     private var mediaProviders: Array<Provider> = plugin.storage.mediaProviders
     private var animeProviders: Array<Provider> = plugin.storage.animeProviders
@@ -47,25 +48,30 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
     }
 
     // #region - necessary functions
-    private fun getDrawable(name: String): Drawable? {
-        val id = resources.getIdentifier(name, "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
-        return ResourcesCompat.getDrawable(resources, id, null)
+    private fun getLayout(name: String, inflater: LayoutInflater, container: ViewGroup?): View {
+        val id = res.getIdentifier(name, "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
+        val layout = res.getLayout(id)
+        return inflater.inflate(layout, container, false)
     }
 
-    private fun getString(name: String): String? {
-        val id = resources.getIdentifier(name, "string", BuildConfig.LIBRARY_PACKAGE_NAME)
-        return resources.getString(id)
+    private fun getDrawable(name: String): Drawable {
+        val id = res.getIdentifier(name, "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        return res.getDrawable(id, null) ?: throw Exception("Unable to find drawable $name")
+    }
+
+    private fun getString(name: String): String {
+        val id = res.getIdentifier(name, "string", BuildConfig.LIBRARY_PACKAGE_NAME)
+        return res.getString(id)
     }
 
     private fun <T : View> View.findView(name: String): T {
-        val id = resources.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
+        val id = plugin.resources!!.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
         return this.findViewById(id)
     }
 
     private fun View.makeTvCompatible() {
-        val outlineId =
-                resources.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
-        this.background = resources.getDrawable(outlineId, null)
+        val outlineId = res.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        this.background = res.getDrawable(outlineId, null)
     }
     // #endregion - necessary functions
 
@@ -74,27 +80,11 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View? {
-
-        // #region - collecting required resources
-        val settingsLayoutId =
-                resources.getIdentifier("settings", "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
-        val settingsLayout = resources.getLayout(settingsLayoutId)
-        val settings = inflater.inflate(settingsLayout, container, false)
-        val providerLayoutId =
-                resources.getIdentifier("provider", "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
-        val saveIconId =
-                resources.getIdentifier("save_icon", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
-        val deleteIconId =
-                resources.getIdentifier("delete_icon", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
-        val editIconId =
-                resources.getIdentifier("edit_icon", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
-        val resetIconId =
-                resources.getIdentifier("reset_icon", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
-        // #endregion - collecting required resources
+        val settings = getLayout("settings", inflater, container)
 
         // #region - building save button and its click listener
         val saveBtn = settings.findView<ImageView>("save")
-        saveBtn.setImageDrawable(resources.getDrawable(saveIconId, null))
+        saveBtn.setImageDrawable(getDrawable("save_icon"))
         saveBtn.makeTvCompatible()
         saveBtn.setOnClickListener(
                 object : OnClickListener {
@@ -123,7 +113,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                     }
                 }
         val deleteBtn = settings.findView<ImageView>("delete")
-        deleteBtn.setImageDrawable(resources.getDrawable(deleteIconId, null))
+        deleteBtn.setImageDrawable(getDrawable("delete_icon"))
         deleteBtn.makeTvCompatible()
         deleteBtn.setOnClickListener(
                 object : OnClickListener {
@@ -264,15 +254,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
         )
         mediaProviders.forEach { provider ->
             mediaProvidersList.addView(
-                    buildProviderView(
-                            provider,
-                            providerLayoutId,
-                            editIconId,
-                            resetIconId,
-                            inflater,
-                            container,
-                            alertBuilder
-                    )
+                    buildProviderView(provider, inflater, container, alertBuilder)
             )
         }
         // #endregion - building Media Providers List with its click listener
@@ -296,15 +278,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
         )
         animeProviders.forEach { provider ->
             animeProvidersList.addView(
-                    buildProviderView(
-                            provider,
-                            providerLayoutId,
-                            editIconId,
-                            resetIconId,
-                            inflater,
-                            container,
-                            alertBuilder
-                    )
+                    buildProviderView(provider, inflater, container, alertBuilder)
             )
         }
         // #endregion - building Media Providers List with its click listener
@@ -317,25 +291,21 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
 
     fun buildProviderView(
             provider: Provider,
-            providerLayoutId: Int,
-            editIconId: Int,
-            resetIconId: Int,
             inflater: LayoutInflater,
             container: ViewGroup?,
             alertBuilder: AlertDialog.Builder
     ): View {
 
         // #region - collecting required resources and setting necessary details
-        val providerLayout = resources.getLayout(providerLayoutId)
-        val providerView = inflater.inflate(providerLayout, container, false)
+        val providerView = getLayout("provider", inflater, container)
         val providerCheckBox = providerView.findView<CheckBox>("provider")
         providerCheckBox.makeTvCompatible()
 
         val domainEdit = providerView.findView<ImageView>("domain_edit")
-        domainEdit.setImageDrawable(resources.getDrawable(editIconId, null))
+        domainEdit.setImageDrawable(getDrawable("edit_icon"))
         domainEdit.makeTvCompatible()
         val domainReset = providerView.findView<ImageView>("domain_reset")
-        domainReset.setImageDrawable(resources.getDrawable(resetIconId, null))
+        domainReset.setImageDrawable(getDrawable("reset_icon"))
         domainReset.makeTvCompatible()
         // #endregion - collecting required resources and setting necessary details
 

@@ -15,7 +15,7 @@ class Trakt(val plugin: RowdyPlugin) : TraktProvider() {
     override var supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.AsianDrama)
     override var lang = "en"
     private val type = listOf(Type.MEDIA, Type.ANIME)
-    override val supportedSyncNames = setOf(SyncIdName.Simkl)
+    override val supportedSyncNames = setOf(SyncIdName.Trakt)
     override val hasMainPage = true
     override val hasQuickSearch = false
 
@@ -35,7 +35,7 @@ class Trakt(val plugin: RowdyPlugin) : TraktProvider() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val mediaData = AppUtils.parseJson<ThisLinkData>(data.replace("\"id\"", "\"tmdbId\""))
+        val mediaData = AppUtils.parseJson<ThisLinkData>(data)
         type
                 .filter {
                     (mediaData.isAnime && it == Type.ANIME) ||

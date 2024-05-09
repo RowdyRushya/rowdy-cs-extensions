@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.metaproviders.TmdbLink
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
-import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
 
 class Tmdb(val plugin: RowdyPlugin) : TmdbProvider() {
@@ -15,7 +14,6 @@ class Tmdb(val plugin: RowdyPlugin) : TmdbProvider() {
     override var supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.AsianDrama)
     override var lang = "en"
     private val type = listOf(Type.MEDIA, Type.ANIME)
-    override val supportedSyncNames = setOf(SyncIdName.Simkl)
     override val hasMainPage = true
     override val hasQuickSearch = false
     override val useMetaLoadResponse = true

@@ -103,6 +103,7 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
             }
         } catch (e: Exception) {
             Log.d("ROWDY", e.message.toString())
+            Log.d("ROWDY", e.stackTrace.toList().toString())
         }
     }
 }

@@ -2,7 +2,6 @@ package com.RowdyAvocado
 
 // import android.util.Log
 import android.util.Base64
-import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
@@ -259,19 +258,15 @@ object RowdyContentExtractors {
                 } else {
                     "$url/embed/tv?tmdb=${data.tmdbId}&season=${data.season}&episode=${data.episode}"
                 }
-        Log.d("rowdy mediaUrl", mediaUrl)
         val iframedoc =
                 app.get(mediaUrl).document.select("iframe#player_iframe").attr("src").let {
                     httpsify(it)
                 }
-        Log.d("rowdy iframedoc", iframedoc)
         val doc = app.get(iframedoc, referer = mediaUrl).document
-        Log.d("rowdy doc", doc.toString())
         val index = doc.select("body").attr("data-i")
         val hash = doc.select("div#hidden").attr("data-h")
+        if (hash.isNullOrEmpty()) return
         val srcrcp = CommonUtils.deobfstr(hash, index)
-        Log.d("rowdy index and hash", index + " : " + hash)
-        Log.d("rowdy srcrcp", srcrcp)
         val script =
                 app.get(httpsify(srcrcp), referer = iframedoc)
                         .document
@@ -283,7 +278,6 @@ object RowdyContentExtractors {
                         ?.replace(Regex("/@#@\\S+?=?="), "")
                         ?.let { base64Decode(it) }
 
-        Log.d("rowdy video", video ?: "")
         callback.invoke(
                 ExtractorLink(
                         "Vidsrc",
@@ -298,7 +292,7 @@ object RowdyContentExtractors {
 
     // #endregion - VidSrcNet (https://vidsrc.net/) Extractor
 
-    // #region - VidSrcTo (https://vidsrc.net) Extractor
+    // #region - VidSrcTo (https://vidsrc.to) Extractor
 
     suspend fun vidsrcToExtractor(
             providerName: String?,
@@ -364,7 +358,7 @@ object RowdyContentExtractors {
 
     data class VidsrctoUrl(@JsonProperty("url") val encUrl: String)
 
-    // #endregion - VidSrcTo (https://vidsrc.net) Extractor
+    // #endregion - VidSrcTo (https://vidsrc.to) Extractor
 
     // #region - Moflix (https://myfilestorage.xyz) Extractor
 
