@@ -13,8 +13,8 @@ android {
         val properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
 
-        buildConfigField("String", "SIMKL_API", "${properties.getProperty("SIMKL_API")}")
-        buildConfigField("String", "MAL_API", "${properties.getProperty("MAL_API")}")
+        buildConfigField("String", "SIMKL_API", "\"${properties.getProperty("SIMKL_API")}\"")
+        buildConfigField("String", "MAL_API", "\"${properties.getProperty("MAL_API")}\"")
     }
 }
 
