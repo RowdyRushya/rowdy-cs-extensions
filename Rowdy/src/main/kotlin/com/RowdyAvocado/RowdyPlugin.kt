@@ -1,5 +1,7 @@
 package com.RowdyAvocado
 
+// import android.util.Log
+
 import android.content.Context
 import android.os.Handler
 import androidx.appcompat.app.AppCompatActivity
@@ -11,58 +13,6 @@ import com.lagradost.cloudstream3.plugins.PluginManager
 @CloudstreamPlugin
 class RowdyPlugin : Plugin() {
     var activity: AppCompatActivity? = null
-
-    // #region - custom data variables
-    // var isAnimeService: Boolean
-    //     get() = getKey("ROWDY_IS_ANIME_SYNC") ?: false
-    //     set(value) {
-    //         setKey("ROWDY_IS_ANIME_SYNC", value)
-    //     }
-
-    // var isMediaService: Boolean
-    //     get() = getKey("ROWDY_IS_MEDIA_SYNC") ?: false
-    //     set(value) {
-    //         setKey("ROWDY_IS_MEDIA_SYNC", value)
-    //     }
-
-    // var mediaService: String
-    //     get() = getKey("MEDIA_SYNC_SERVICE") ?: "Simkl"
-    //     set(value) {
-    //         setKey("MEDIA_SYNC_SERVICE", value)
-    //     }
-
-    // var animeService: String
-    //     get() = getKey("ANIME_SYNC_SERVICE") ?: "Anilist"
-    //     set(value) {
-    //         setKey("ANIME_SYNC_SERVICE", value)
-    //     }
-
-    // var mediaProviders: Array<Provider>
-    //     get() = buildProvidersList(mediaPrdList, "MEDIA_PROVIDERS")
-    //     set(value) {
-    //         setKey("MEDIA_PROVIDERS", value)
-    //     }
-
-    // var animeProviders: Array<Provider>
-    //     get() = buildProvidersList(animePrdList, "ANIME_PROVIDERS")
-    //     set(value) {
-    //         setKey("ANIME_PROVIDERS", value)
-    //     }
-    // #endregion - custom data variables
-
-    // private val mediaPrdList =
-    //         listOf(
-    //                 "CineZone" to "https://cinezone.to",
-    //                 "VidsrcNet" to "https://vidsrc.net",
-    //                 "VidsrcTo" to "https://vidsrc.to",
-    //         )
-
-    // private val animePrdList =
-    //         listOf(
-    //                 "Aniwave" to "https://aniwave.to",
-    //                 "Anitaku" to "https://www.anitaku.com",
-    //                 "HiAnime" to "https://www.hianime.com"
-    //         )
 
     val providers = RowdyExtractorUtil
     val storage = StorageManager
@@ -95,7 +45,7 @@ class RowdyPlugin : Plugin() {
                 }
         openSettings = {
             val frag = RowdySettings(this)
-            frag.show(activity!!.supportFragmentManager, "")
+            frag.show(context.supportFragmentManager, "")
         }
     }
 

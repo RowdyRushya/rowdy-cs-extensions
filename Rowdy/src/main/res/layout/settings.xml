@@ -65,14 +65,14 @@
             android:layout_marginTop="10dp" />
 
         <Switch
-            android:id="@+id/media_sync"
+            android:id="@+id/media_meta"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="17sp"
-            android:text="Enable Media Provider" />
+            android:text="Enable Media Services" />
 
         <RadioGroup
-            android:id="@+id/media_sync_group"
+            android:id="@+id/media_meta_group"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
@@ -110,14 +110,14 @@
             android:layout_marginTop="10dp" />
 
         <Switch
-            android:id="@+id/anime_sync"
+            android:id="@+id/anime_meta"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="17sp"
-            android:text="Enable Anime Provider" />
+            android:text="Enable Anime Services" />
 
         <RadioGroup
-            android:id="@+id/anime_sync_group"
+            android:id="@+id/anime_meta_group"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
@@ -133,7 +133,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:paddingRight="5dp"
-                android:text="MyAnimeList" />
+                android:text="MyAnimeList (login required)" />
 
         </RadioGroup>
 

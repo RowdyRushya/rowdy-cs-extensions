@@ -29,7 +29,7 @@ object RowdyExtractorUtil {
                     "VidsrcTo" to "https://vidsrc.to",
                     "Moflix" to "https://moflix-stream.xyz",
                     "Ridomovies" to "https://ridomovies.tv",
-                    "ZShow" to "https://tv.idlixofficial.co",
+                    "IdliX" to "https://tv.idlixofficial.co",
             )
 
     val animePrdList =

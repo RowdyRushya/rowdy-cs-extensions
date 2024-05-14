@@ -25,7 +25,7 @@ class Simkl(override val plugin: RowdyPlugin) : Rowdy(plugin) {
     override val api = AccountManager.simklApi
     override val syncId = "simkl"
     override val loginRequired = true
-    private val clientId = "336bff735f15ad4045c6110f94a989a6d021174141126ed14bb24f5b4241dd58"
+    private val auth = BuildConfig.SIMKL_API
     private val limit = 20
     private val apiUrl = "https://api.simkl.com"
 
@@ -106,13 +106,13 @@ class Simkl(override val plugin: RowdyPlugin) : Rowdy(plugin) {
 
     override val mainPage =
             mainPageOf(
-                    "$apiUrl/tv/trending/month?type=series&client_id=$clientId&extended=overview&limit=$limit&page=" to
+                    "$apiUrl/tv/trending/month?type=series&client_id=$auth&extended=overview&limit=$limit&page=" to
                             "Trending TV Shows",
-                    "$apiUrl/movies/trending/month?client_id=$clientId&extended=overview&limit=$limit&page=" to
+                    "$apiUrl/movies/trending/month?client_id=$auth&extended=overview&limit=$limit&page=" to
                             "Trending Movies",
-                    "$apiUrl/tv/best/all?type=series&client_id=$clientId&extended=overview&limit=$limit&page=" to
+                    "$apiUrl/tv/best/all?type=series&client_id=$auth&extended=overview&limit=$limit&page=" to
                             "Best TV Shows",
-                    // "$apiUrl/movies/best/all?client_id=$clientId&extended=overview&limit=$limit&page=" to
+                    // "$apiUrl/movies/best/all?client_id=$auth&extended=overview&limit=$limit&page=" to
                     //         "Best Movies",
                     "Personal" to "Personal"
             )
@@ -133,7 +133,7 @@ class Simkl(override val plugin: RowdyPlugin) : Rowdy(plugin) {
     override suspend fun load(url: String): LoadResponse {
         val id = url.removeSuffix("/").substringAfterLast("/")
         val data =
-                app.get("$apiUrl/tv/$id?client_id=$clientId&extended=full")
+                app.get("$apiUrl/tv/$id?client_id=$auth&extended=full")
                         .parsedSafe<SimklMediaObject>()
                         ?: api.searchByIds(mapOf(SyncServices.Simkl to id))
                                 ?.get(0)
@@ -152,7 +152,7 @@ class Simkl(override val plugin: RowdyPlugin) : Rowdy(plugin) {
             }
         } else {
             val eps =
-                    app.get("$apiUrl/tv/episodes/$id?client_id=$clientId&extended=full")
+                    app.get("$apiUrl/tv/episodes/$id?client_id=$auth&extended=full")
                             .parsedSafe<Array<SimklEpisodeObject>>()
                             ?: buildSimklEpisodes(data.total_episodes)
                                     ?: throw Exception("Unable to fetch episodes")

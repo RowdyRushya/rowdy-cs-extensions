@@ -98,31 +98,29 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
         // #endregion - building save button and its click listener
 
         // #region - building delete button and its alert as well as its click listener
-        val alertBuilder =
-                AlertDialog.Builder(context ?: throw Exception("Unable to read resources"))
-        val dialogClickListener =
-                DialogInterface.OnClickListener { _, which ->
-                    when (which) {
-                        DialogInterface.BUTTON_POSITIVE -> {
-                            plugin.storage.deleteAllData()
-                            plugin.reload(context)
-                            showToast("Reset completed")
-                            dismiss()
-                        }
-                        DialogInterface.BUTTON_NEGATIVE -> {}
-                    }
-                }
         val deleteBtn = settings.findView<ImageView>("delete")
         deleteBtn.setImageDrawable(getDrawable("delete_icon"))
         deleteBtn.makeTvCompatible()
         deleteBtn.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
-                        alertBuilder
+                        AlertDialog.Builder(
+                                        context ?: throw Exception("Unable to build alert dialog")
+                                )
                                 .setTitle("Reset Rowdy")
                                 .setMessage("This will reset all settings.")
-                                .setPositiveButton("Reset", dialogClickListener)
-                                .setNegativeButton("Cancel", dialogClickListener)
+                                .setPositiveButton(
+                                        "Reset",
+                                        object : DialogInterface.OnClickListener {
+                                            override fun onClick(p0: DialogInterface, p1: Int) {
+                                                plugin.storage.deleteAllData()
+                                                plugin.reload(context)
+                                                showToast("Reset completed")
+                                                dismiss()
+                                            }
+                                        }
+                                )
+                                .setNegativeButton("Cancel", null)
                                 .show()
                                 .setDefaultFocus()
                     }
@@ -130,31 +128,31 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
         )
         // #endregion - building detete button and its alert as well as its click listener
 
-        // #region - building Anime Sync Switch with its click listener
-        val mediaSyncSwitch = settings.findView<Switch>("media_sync")
-        mediaSyncSwitch.makeTvCompatible()
+        // #region - building Anime Meta Switch with its click listener
+        val mediaMetaSwitch = settings.findView<Switch>("media_meta")
+        mediaMetaSwitch.makeTvCompatible()
         val mediaPrdConfig = settings.findView<LinearLayout>("media_providers_config")
-        val mediaSyncRadioGroup = settings.findView<RadioGroup>("media_sync_group")
+        val mediaMetaRadioGroup = settings.findView<RadioGroup>("media_meta_group")
 
         mediaPrdConfig.visibility = if (plugin.storage.isMediaService) View.VISIBLE else View.GONE
-        mediaSyncRadioGroup.visibility =
+        mediaMetaRadioGroup.visibility =
                 if (plugin.storage.isMediaService) View.VISIBLE else View.GONE
-        mediaSyncSwitch.isChecked = plugin.storage.isMediaService
+        mediaMetaSwitch.isChecked = plugin.storage.isMediaService
 
-        mediaSyncSwitch.setOnClickListener(
+        mediaMetaSwitch.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
-                        plugin.storage.isMediaService = mediaSyncSwitch.isChecked
+                        plugin.storage.isMediaService = mediaMetaSwitch.isChecked
                         mediaPrdConfig.visibility =
-                                if (mediaSyncSwitch.isChecked) View.VISIBLE else View.GONE
-                        mediaSyncRadioGroup.visibility =
-                                if (mediaSyncSwitch.isChecked) View.VISIBLE else View.GONE
+                                if (mediaMetaSwitch.isChecked) View.VISIBLE else View.GONE
+                        mediaMetaRadioGroup.visibility =
+                                if (mediaMetaSwitch.isChecked) View.VISIBLE else View.GONE
                     }
                 }
         )
-        // #endregion - building Anime Sync Switch with its click listener
+        // #endregion - building Anime Meta Switch with its click listener
 
-        // #region - building Media Sync Services List with its click listener
+        // #region - building Media Meta Services List with its click listener
         val simklRadio = settings.findView<RadioButton>("simkl")
         simklRadio.makeTvCompatible()
         val tmdbRadio = settings.findView<RadioButton>("tmdb")
@@ -186,31 +184,31 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                     }
                 }
         )
-        // #endregion - building Media Sync Services List with its click listener
+        // #endregion - building Media Meta Services List with its click listener
 
-        // #region - building Anime Sync Switch with its click listener
-        val animeSyncSwitch = settings.findView<Switch>("anime_sync")
-        animeSyncSwitch.makeTvCompatible()
+        // #region - building Anime Meta Switch with its click listener
+        val animeMetaSwitch = settings.findView<Switch>("anime_meta")
+        animeMetaSwitch.makeTvCompatible()
         val animePrdConfig = settings.findView<LinearLayout>("anime_providers_config")
-        val animeSyncRadioGroup = settings.findView<RadioGroup>("anime_sync_group")
+        val animeMetaRadioGroup = settings.findView<RadioGroup>("anime_meta_group")
         animePrdConfig.visibility = if (plugin.storage.isAnimeService) View.VISIBLE else View.GONE
-        animeSyncRadioGroup.visibility =
+        animeMetaRadioGroup.visibility =
                 if (plugin.storage.isAnimeService) View.VISIBLE else View.GONE
-        animeSyncSwitch.isChecked = plugin.storage.isAnimeService
-        animeSyncSwitch.setOnClickListener(
+        animeMetaSwitch.isChecked = plugin.storage.isAnimeService
+        animeMetaSwitch.setOnClickListener(
                 object : OnClickListener {
                     override fun onClick(btn: View) {
-                        plugin.storage.isAnimeService = animeSyncSwitch.isChecked
+                        plugin.storage.isAnimeService = animeMetaSwitch.isChecked
                         animePrdConfig.visibility =
-                                if (animeSyncSwitch.isChecked) View.VISIBLE else View.GONE
-                        animeSyncRadioGroup.visibility =
-                                if (animeSyncSwitch.isChecked) View.VISIBLE else View.GONE
+                                if (animeMetaSwitch.isChecked) View.VISIBLE else View.GONE
+                        animeMetaRadioGroup.visibility =
+                                if (animeMetaSwitch.isChecked) View.VISIBLE else View.GONE
                     }
                 }
         )
-        // #endregion - building Anime Sync Switch with its click listener
+        // #endregion - building Anime Meta Switch with its click listener
 
-        // #region - building Anime Sync Services List with its click listener
+        // #region - building Anime Meta Services List with its click listener
         val anilistRadio = settings.findView<RadioButton>("anilist")
         anilistRadio.makeTvCompatible()
         val malRadio = settings.findView<RadioButton>("mal")
@@ -232,7 +230,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                     }
                 }
         )
-        // #endregion - building Anime Sync Services List with its click listener
+        // #endregion - building Anime Meta Services List with its click listener
 
         // #region - building Media Providers List with its click listener
         val mediaProvidersListTitle = settings.findView<TextView>("media_providers_list_title")
@@ -253,9 +251,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                 }
         )
         mediaProviders.forEach { provider ->
-            mediaProvidersList.addView(
-                    buildProviderView(provider, inflater, container, alertBuilder)
-            )
+            mediaProvidersList.addView(buildProviderView(provider, inflater, container))
         }
         // #endregion - building Media Providers List with its click listener
 
@@ -277,9 +273,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                 }
         )
         animeProviders.forEach { provider ->
-            animeProvidersList.addView(
-                    buildProviderView(provider, inflater, container, alertBuilder)
-            )
+            animeProvidersList.addView(buildProviderView(provider, inflater, container))
         }
         // #endregion - building Media Providers List with its click listener
 
@@ -292,8 +286,7 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
     fun buildProviderView(
             provider: Provider,
             inflater: LayoutInflater,
-            container: ViewGroup?,
-            alertBuilder: AlertDialog.Builder
+            container: ViewGroup?
     ): View {
 
         // #region - collecting required resources and setting necessary details
@@ -304,9 +297,6 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
         val domainEdit = providerView.findView<ImageView>("domain_edit")
         domainEdit.setImageDrawable(getDrawable("edit_icon"))
         domainEdit.makeTvCompatible()
-        val domainReset = providerView.findView<ImageView>("domain_reset")
-        domainReset.setImageDrawable(getDrawable("reset_icon"))
-        domainReset.makeTvCompatible()
         // #endregion - collecting required resources and setting necessary details
 
         providerCheckBox.text = provider.name + if (provider.userModified) "*" else ""
@@ -331,43 +321,41 @@ class RowdySettings(val plugin: RowdyPlugin) : BottomSheetDialogFragment() {
                         val editText = EditText(context)
                         editText.setText(provider.domain)
 
-                        val domainEditClickListener =
-                                DialogInterface.OnClickListener { _, which ->
-                                    when (which) {
-                                        DialogInterface.BUTTON_POSITIVE -> {
-                                            provider.domain = editText.text.toString()
-                                            provider.userModified = true
-                                            plugin.storage.mediaProviders = mediaProviders
-                                            plugin.storage.animeProviders = animeProviders
-                                            plugin.reload(context)
-                                            showToast("Domain changed")
-                                            dismiss()
-                                        }
-                                        DialogInterface.BUTTON_NEGATIVE -> {}
-                                    }
-                                }
-
                         editText.setInputType(InputType.TYPE_CLASS_TEXT)
-                        alertBuilder
+                        AlertDialog.Builder(
+                                        context ?: throw Exception("Unable to build alert dialog")
+                                )
                                 .setTitle("Update Domain")
                                 .setView(editText)
-                                .setPositiveButton("Save", domainEditClickListener)
-                                .setNegativeButton("Cancel", domainEditClickListener)
+                                .setPositiveButton(
+                                        "Save",
+                                        object : DialogInterface.OnClickListener {
+                                            override fun onClick(p0: DialogInterface, p1: Int) {
+                                                provider.domain = editText.text.toString()
+                                                provider.userModified = true
+                                                plugin.storage.mediaProviders = mediaProviders
+                                                plugin.storage.animeProviders = animeProviders
+                                                plugin.reload(context)
+                                                showToast("Domain changed")
+                                                dismiss()
+                                            }
+                                        }
+                                )
+                                .setNegativeButton(
+                                        "Reset",
+                                        object : DialogInterface.OnClickListener {
+                                            override fun onClick(p0: DialogInterface, p1: Int) {
+                                                provider.userModified = false
+                                                plugin.storage.mediaProviders = mediaProviders
+                                                plugin.storage.animeProviders = animeProviders
+                                                plugin.reload(context)
+                                                showToast("Domain reset complete.")
+                                                dismiss()
+                                            }
+                                        }
+                                )
                                 .show()
                                 .setDefaultFocus()
-                    }
-                }
-        )
-
-        domainReset.setOnClickListener(
-                object : OnClickListener {
-                    override fun onClick(btn: View) {
-                        provider.userModified = false
-                        plugin.storage.mediaProviders = mediaProviders
-                        plugin.storage.animeProviders = animeProviders
-                        plugin.reload(context)
-                        showToast("Domain reset complete.")
-                        dismiss()
                     }
                 }
         )

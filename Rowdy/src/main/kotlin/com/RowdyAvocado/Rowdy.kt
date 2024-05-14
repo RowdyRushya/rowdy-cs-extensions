@@ -40,6 +40,12 @@ abstract class Rowdy(open val plugin: RowdyPlugin) : MainAPI() {
     open override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         if (request.name.equals("Personal")) {
             // Reading and manipulating personal library
+            api.loginInfo()
+                    ?: return newHomePageResponse(
+                            "Login required for personal content.",
+                            emptyList<SearchResponse>(),
+                            false
+                    )
             var homePageList =
                     api.getPersonalLibrary()?.allLibraryLists?.mapNotNull {
                         if (it.items.isEmpty()) return@mapNotNull null

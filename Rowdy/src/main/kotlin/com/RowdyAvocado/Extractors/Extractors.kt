@@ -4,7 +4,6 @@ package com.RowdyAvocado
 import android.util.Base64
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
@@ -110,9 +109,9 @@ object RowdyContentExtractors {
                 "$url/ajax/server/list/$episodeIds?vrf=${AniwaveUtils.vrfEncrypt(episodeIds)}"
         val episodeData = app.get(episodeDataUrl).parsedSafe<ApiResponseHTML>()?.html ?: return
 
-        Jsoup.parse(episodeData).body().select(".servers .type").amap {
+        Jsoup.parse(episodeData).body().select(".servers .type").apmap {
             val dubType = it.attr("data-type")
-            it.select("li").amap LinkLoader@{
+            it.select("li").apmap LinkLoader@{
                 val serverId = it.attr("data-sv-id")
                 val dataId = it.attr("data-link-id")
                 val serverResUrl = "$url/ajax/server/$dataId?vrf=${AniwaveUtils.vrfEncrypt(dataId)}"
@@ -166,12 +165,12 @@ object RowdyContentExtractors {
                 "$url/ajax/server/list/$episodeId?vrf=${CineZoneUtils.vrfEncrypt(episodeId)}"
         val episodeData = app.get(episodeDataUrl).parsedSafe<ApiResponseHTML>()?.html ?: return
 
-        Jsoup.parse(episodeData).body().select(".server").amap {
+        Jsoup.parse(episodeData).body().select(".server").apmap {
             val serverId = it.attr("data-id")
             val dataId = it.attr("data-link-id")
             val serverResUrl = "$url/ajax/server/$dataId?vrf=${CineZoneUtils.vrfEncrypt(dataId)}"
             val serverRes = app.get(serverResUrl).parsedSafe<AniwaveResponseServer>()
-            val encUrl = serverRes?.result?.url ?: return@amap
+            val encUrl = serverRes?.result?.url ?: return@apmap
             val decUrl = CineZoneUtils.vrfDecrypt(encUrl)
             commonLinkLoader(
                     providerName,
@@ -520,8 +519,8 @@ object RowdyContentExtractors {
     }
     // #endregion - Ridomovies (https://myfilestorage.xyz) Extractor
 
-    // #region - ZShow (https://tv.idlixofficial.co) Extractor
-    suspend fun zshowExtractor(
+    // #region - IdliX (https://tv.idlixofficial.co) Extractor
+    suspend fun idlixExtractor(
             providerName: String?,
             url: String?,
             data: LinkData,
@@ -537,7 +536,7 @@ object RowdyContentExtractors {
                 }
         wpMoviesExtractor(providerName, mediaUrl, data, subtitleCallback, callback, encrypt = true)
     }
-    // #endregion - ZShow (https://tv.idlixofficial.co) Extractor
+    // #endregion - IdliX (https://tv.idlixofficial.co) Extractor
 
     // #region - Wpmovies () Extractor
     private suspend fun wpMoviesExtractor(
@@ -557,7 +556,7 @@ object RowdyContentExtractors {
                 @JsonProperty("type") val type: String? = null,
         )
 
-        data class ZShowEmbed(
+        data class IdliXEmbed(
                 @JsonProperty("m") val meta: String? = null,
         )
 
@@ -595,7 +594,7 @@ object RowdyContentExtractors {
                                 when {
                                     encrypt -> {
                                         val meta =
-                                                tryParseJson<ZShowEmbed>(it.embed_url)?.meta
+                                                tryParseJson<IdliXEmbed>(it.embed_url)?.meta
                                                         ?: return@apmap
                                         val key =
                                                 WpUtils.generateWpKey(it.key ?: return@apmap, meta)

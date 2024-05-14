@@ -86,8 +86,8 @@ class RowdyExtractor(val type: Type, val plugin: RowdyPlugin) : ExtractorApi() {
                                         callback
                                 )
                             }
-                            "ZShow" -> {
-                                RowdyContentExtractors.zshowExtractor(
+                            "IdliX" -> {
+                                RowdyContentExtractors.idlixExtractor(
                                         provider.name,
                                         provider.domain,
                                         data,

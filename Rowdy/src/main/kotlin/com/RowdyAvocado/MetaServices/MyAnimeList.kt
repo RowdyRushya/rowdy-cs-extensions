@@ -1,14 +1,12 @@
 package com.RowdyAvocado
 
 // import android.util.Log
-
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.syncproviders.SyncAPI
+import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
-import com.lagradost.cloudstream3.syncproviders.providers.MALApi
 import com.lagradost.cloudstream3.utils.*
 
 class MyAnimeList(override val plugin: RowdyPlugin) : Rowdy(plugin) {
@@ -19,12 +17,12 @@ class MyAnimeList(override val plugin: RowdyPlugin) : Rowdy(plugin) {
     override val supportedSyncNames = setOf(SyncIdName.Anilist)
     override val hasMainPage = true
     override val hasQuickSearch = false
-    override val api: SyncAPI = MALApi(1)
+    override val api = AccountManager.malApi
     override val type = listOf(Type.ANIME)
     override val syncId = "MAL"
     override val loginRequired = true
     private final val mediaLimit = 20
-    private val auth = getKey<String>("mal_account_1", "mal_token")
+    private val auth = BuildConfig.MAL_API
     private val apiUrl = "https://api.myanimelist.net/v2"
 
     override val mainPage =
@@ -44,6 +42,7 @@ class MyAnimeList(override val plugin: RowdyPlugin) : Rowdy(plugin) {
     override suspend fun MainPageRequest.toSearchResponseList(
             page: Int
     ): Pair<List<SearchResponse>, Boolean> {
+        Log.d("rowdy", auth.toString())
         val res =
                 app.get(
                                 "${this.data}${(page - 1) * mediaLimit}",
