@@ -40,6 +40,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
                     android:layout_marginBottom="5dp"
+                    android:focusable="true"
+                    android:nextFocusRight="@id/save"
+                    android:nextFocusDown="@id/media_meta"
                     android:padding="5dp" />
 
                 <ImageView
@@ -48,6 +51,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
                     android:layout_marginBottom="5dp"
+                    android:focusable="true"
+                    android:nextFocusLeft="@id/delete"
+                    android:nextFocusDown="@id/media_meta"
                     android:padding="5dp" />
 
             </LinearLayout>
@@ -159,6 +165,7 @@
                 android:layout_height="wrap_content"
                 android:textSize="17sp"
                 android:padding="5dp"
+                android:focusable="true"
                 android:text="▶ Media Providers" />
 
             <LinearLayout
@@ -167,7 +174,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingBottom="10dp"
-                android:visibility="gone">
+                android:visibility="gone"
+                tools:visibility="visible">
             </LinearLayout>
 
         </LinearLayout>
@@ -195,6 +203,7 @@
                 android:layout_height="wrap_content"
                 android:textSize="17sp"
                 android:padding="5dp"
+                android:focusable="true"
                 android:text="▶ Anime Providers" />
 
             <LinearLayout

@@ -36,6 +36,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:padding="5dp"
+            android:focusable="true"
             android:layout_rowWeight="1" />
     </LinearLayout>
 
